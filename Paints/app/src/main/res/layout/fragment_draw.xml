@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/FloatingPlus"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context=".DrawFragment">
+
+    <com.example.phase1.PaintView
+        android:id="@+id/paintView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
+
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:id="@+id/FloatingBtns"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="150dp"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <!--on below line we are creating a settings fab
+          and setting its visibility to gone-->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/idFABAdd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/colorPurple"
+            android:contentDescription="@string/app_name"
+            android:padding="4dp"
+            android:src="@drawable/baseline_add_24"
+            app:backgroundTint="@color/colorPurple"
+            app:tint="@color/colorWhite" />
+
+
+        <!--on below line we are creating a home fab
+             and setting its visibility to gone-->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/idFABClearAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/colorPurple"
+            android:contentDescription="@string/app_name"
+            android:padding="4dp"
+            android:src="@drawable/baseline_clear_all_24"
+            android:visibility="gone"
+            app:backgroundTint="@color/colorPurple"
+            app:tint="@color/colorWhite" />
+
+        <!--on below line we are creating a home fab
+            and setting its visibility to gone-->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/idFABNew"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/colorPurple"
+            android:contentDescription="@string/app_name"
+            android:padding="4dp"
+            android:src="@drawable/baseline_fiber_new_24"
+            android:visibility="gone"
+            app:backgroundTint="@color/colorPurple"
+            app:tint="@color/colorWhite" />
+
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/idFABShare"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/colorPurple"
+            android:contentDescription="@string/app_name"
+            android:padding="4dp"
+            android:src="@drawable/baseline_share_24"
+            android:visibility="gone"
+            app:backgroundTint="@color/colorPurple"
+            app:tint="@color/colorWhite" />
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/seekLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="95dp"
+        android:background="@color/colorPurple"
+        android:layout_weight="1"
+        android:visibility="gone"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/textWatcher"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:layout_below="@id/seekBar"
+            android:layout_marginRight="15dp"
+            android:text="10"
+            android:textColor="@color/colorWhite"
+            android:textSize="25dp"
+            />
+
+        <SeekBar
+            android:id="@+id/seekBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/penSelector"
+            android:layout_gravity="center"
+            android:layout_marginRight="40dp"
+            android:layout_weight="1"
+            android:background="@color/colorBlack"
+            android:max="100"
+            android:min="10"
+            android:minHeight="40dp"
+            android:progress="0" />
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/colorLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="95dp"
+        android:background="@color/colorPurple"
+        android:layout_weight="1"
+        android:visibility="gone"
+        android:orientation="horizontal">
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"> <!-- Hide scrollbars -->
+
+            <LinearLayout
+                android:id="@+id/buttonContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <!-- Add your rectangular shape buttons here -->
+                <ImageButton
+                    android:id="@+id/color1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/baseline_black_color_btn"/>
+
+                <ImageButton
+                    android:id="@+id/color2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/baseline_blue_color_btn"
+                    />
+
+                <ImageButton
+                    android:id="@+id/color3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/baseline_orange_color_btn"
+                    />
+
+                <ImageButton
+                    android:id="@+id/color4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/baseline_white_color_btn"
+                    />
+
+                <ImageButton
+                    android:id="@+id/color5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/baseline_cyan_color_btn"
+                    />
+
+                <ImageButton
+                    android:id="@+id/color6"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/baseline_purple_color_btn"
+                    />
+
+                <ImageButton
+                    android:id="@+id/color7"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/baseline_red_color_btn"
+                    />
+
+                <ImageButton
+                    android:id="@+id/color8"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/baseline_blue_color_btn"
+                    />
+            </LinearLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/colorPurple"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/penSelector"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:scaleType="fitCenter"
+            android:minWidth="90dp"
+            android:src="@drawable/pen" />
+
+
+        <ImageButton
+            android:id="@+id/colorSelector"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_margin="20dp"
+            android:scaleType="fitCenter"
+            android:minWidth="90dp"
+            android:onClick="onImageButtonClick"
+            android:src="@drawable/baseline_format_color_fill_24" />
+
+
+
+        <ImageButton
+            android:id="@+id/erasorSelector"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_margin="20dp"
+            android:scaleType="fitCenter"
+            android:minWidth="90dp"
+            android:src="@drawable/erasor" />
+
+        <ImageButton
+            android:id="@+id/textSelector"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_margin="20dp"
+            android:scaleType="fitCenter"
+            android:minWidth="90dp"
+            android:src="@drawable/text" />
+
+
+
+
+
+    </LinearLayout>
+
+
+
+
+</FrameLayout>

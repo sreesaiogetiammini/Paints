@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48.0"
+    android:viewportHeight="48.0">
+
+    <!-- Rectangle background -->
+    <path
+        android:pathData="M2,2h44v44h-44z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Text inside the rectangle -->
+    <group
+        android:translateX="0"
+        android:translateY="8">
+        <!-- Horizontal Line -->
+        <path
+            android:pathData="M12,8h25"
+            android:strokeWidth="4"
+            android:strokeColor="#000000" />
+
+        <!-- Vertical Line -->
+        <path
+            android:pathData="M24,6v25"
+            android:strokeWidth="4"
+            android:strokeColor="#000000" />
+
+
+    </group>
+</vector>
