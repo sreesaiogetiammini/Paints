@@ -14,7 +14,6 @@ class PaintViewModel: ViewModel(){
 
 
     private val drawingPathsLiveData = MutableLiveData<List<Pair<Path, Paint>>>()
-    private val drawingColorPathsLiveData = MutableLiveData<List<Pair<Path, Int>>>()
 
     fun setDrawingPaths(paths: List<Pair<Path, Paint>>) {
         drawingPathsLiveData.value = paths
