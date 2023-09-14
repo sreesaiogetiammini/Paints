@@ -34,7 +34,7 @@ class DrawFragment : Fragment() {
         // Inflate the layout for this fragment
         binding = FragmentDrawBinding.inflate(inflater)
 
-        // Set up the onTouchEvent for your custom view
+        // Set up the onTouchEvent for  custom view
         binding.paintView.setOnTouchListener { _, event ->
             binding.paintView.onTouchEvent(event)
             true // Consume the touch event
