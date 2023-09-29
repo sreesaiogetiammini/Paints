@@ -1,30 +1,45 @@
 package com.example.phase2
 
-import android.graphics.Color
+
+
 import android.graphics.Paint
-import android.graphics.Path
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.runtime.Composable
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.lifecycle.ViewModel
-import kotlin.random.Random
-@RequiresApi(Build.VERSION_CODES.O)
+
 class PaintViewModel: ViewModel(){
 
 
 
-    private val drawingPathsLiveData = MutableLiveData<List<Pair<Path, Paint>>>()
+    private val lines = mutableStateListOf<Line>()
+    private val _lineColor = mutableStateOf(Color.Black)
+    val lineColor = _lineColor
 
-    fun setDrawingPaths(paths: List<Pair<Path, Paint>>) {
-        drawingPathsLiveData.value = paths
+    private val _lineStroke = mutableStateOf(Stroke(10f))
+    val lineStroke = _lineStroke
+
+    fun addLine(line: Line) {
+        lines.add(line)
     }
 
-    fun getDrawingPaths(): LiveData<List<Pair<Path, Paint>>> {
-        return drawingPathsLiveData
+    fun clearLines() {
+        lines.clear()
+    }
+    fun getLines(): List<Line> {
+        return lines
     }
 
 
+    // Functions to update line color and stroke
+    fun updateLineColor(newColor: Color) {
+        _lineColor.value = newColor
+    }
 
+    fun updateLineStroke(newStroke: Stroke) {
+        _lineStroke.value = newStroke
+    }
 }
+
+
