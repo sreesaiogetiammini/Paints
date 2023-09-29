@@ -13,9 +13,11 @@ fun Navigation(){
     val databaseHelper = DatabaseHelper(context)
 
     NavHost(navController = navController, startDestination = Screen.SpalshScreen.route ){
+        // Our Team Logo should be here
         composable(route = Screen.SpalshScreen.route){
             SplashScreen(navController = navController)
         }
+        // User Login , SignUp Should be here
         composable(route = Screen.LoginScreen.route){
             LoginSignupScreen(navController = navController, databaseHelper = databaseHelper)
         }
