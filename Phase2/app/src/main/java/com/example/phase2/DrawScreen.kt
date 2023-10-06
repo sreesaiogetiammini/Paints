@@ -1,5 +1,7 @@
 package com.example.phase2
 
+import android.graphics.Bitmap
+import android.icu.text.ListFormatter.Width
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -38,20 +41,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.gson.Gson
+import kotlin.math.roundToInt
 
 @Preview(showBackground = true)
 @Composable
@@ -70,6 +83,18 @@ fun DrawScreen(navController: NavController) {
     var clickedBtn by remember { mutableStateOf(-1) }
     var isSliderDialogOpen by remember { mutableStateOf(false) }
     val viewModel: PaintViewModel = viewModel()
+    var isSaveDialogOpen by remember {
+        mutableStateOf(false)
+    }
+
+    val configuration = LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp.dp
+    val screenHeightDp = configuration.screenHeightDp.dp
+
+    val density = LocalDensity.current.density
+    val screenWidth = (screenWidthDp.value * density).roundToInt()
+    val screenHeight = (screenHeightDp.value * density).roundToInt()
+
 
     val icons = listOf(
         painterResource(R.drawable.baseline_draw_24),
@@ -198,8 +223,15 @@ fun DrawScreen(navController: NavController) {
         },
 
         floatingActionButton = {
-            FloatingActionButton(onClick = { presses++ }) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
+            Column(
+                verticalArrangement = Arrangement.Bottom
+            )
+            {
+                FloatingActionButton(onClick = {
+                    isSaveDialogOpen = true
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add")
+                }
             }
         }
     )
@@ -248,6 +280,13 @@ fun DrawScreen(navController: NavController) {
 
     }
 
+    fun convertToBitMap(lines: List<Line>) : Bitmap {
+        val bitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888)
+
+        val canvas = Canvas(bitmap)
+    }
+
+
 }
 
 @Composable
@@ -274,4 +313,47 @@ fun AnimatedIconButton(
     }
 }
 
+@Composable
+fun DrawCanvas(
+    modifier: Modifier,
+    lines: List<Line>,
+    linesColor: Color,
+    linesStroke: Dp
+){
+    val density = LocalDensity.current.density
+    val strokePx = with(LocalDensity.current) {linesStroke.toPx()}
+    val paint = remember {
+        Paint().apply {
+            color = linesColor
+            strokeWidth = strokePx
+            isAntiAlias = true
+            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+        }
+    }
+
+    AndroidView(
+        modifier = modifier,
+        factory = {context ->
+            val bitmapWidth = context.resources.displayMetrics.widthPixels
+            val bitmapHeight = context.resources.displayMetrics.heightPixels
+            createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888)
+        },
+        update = {canvasBitmap ->
+
+            val canvas = canvasBitmap.nativeCanvas
+
+            canvas.drawColor(Color.White.toArgb()) // Clear the canvas
+
+            lines.forEach { line ->
+                canvas.drawLine(
+                    line.start.x,
+                    line.start.y,
+                    line.end.x,
+                    line.end.y,
+                    paint
+                )
+            }
+        }
+    )
+}
 

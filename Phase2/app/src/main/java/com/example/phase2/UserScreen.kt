@@ -2,6 +2,7 @@ package com.example.phase2
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -11,8 +12,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -98,13 +104,56 @@ fun ScrollableList() {
 fun ListItem(item: Int) {
     // Composable for rendering each list item
     // You can customize this based on your item's content
-    BasicTextField(
-        value = "Item $item",
-        onValueChange = { /* Handle text change if needed */ },
+    var isDropDownVisible by remember {
+        mutableStateOf(false)
+    }
+
+    Row (
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-    )
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        BasicTextField(
+            value = "Item $item",
+            onValueChange = { /* Handle text change if needed */ },
+            modifier = Modifier
+                .weight(1f)
+        )
+
+        Icon(
+            imageVector = Icons.Default.ArrowDropDown,
+            contentDescription = "Dropdown",
+            modifier = Modifier
+                .clickable {
+                    isDropDownVisible = !isDropDownVisible
+                }
+                .padding(8.dp)
+        )
+
+        DropdownMenu(expanded = isDropDownVisible, onDismissRequest = {
+            isDropDownVisible = false
+        },
+            modifier = Modifier.widthIn(320.dp)
+        ) {
+            DropdownMenuItem(text = {
+                Text("Edit")
+            }, onClick = {
+                isDropDownVisible = false;
+            })
+            DropdownMenuItem(text = {
+                Text("Share")
+            }, onClick = {
+                isDropDownVisible = false;
+            })
+            DropdownMenuItem(text = {
+                Text("Delete")
+            }, onClick = {
+                isDropDownVisible = false;
+            })
+        }
+    }
 }
 
 

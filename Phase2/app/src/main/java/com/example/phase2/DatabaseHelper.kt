@@ -40,4 +40,8 @@ class DatabaseHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME,
         val cursor = db.rawQuery("SELECT * FROM $TABLE_NAME WHERE EMAIL = ? AND PASSWORD = ?", arrayOf(email, password))
         return cursor.count > 0
     }
+
+//    fun insertDrawing(userId: Int, drawingData: Any): Boolean {
+//        /*TODO*/
+//    }
 }
