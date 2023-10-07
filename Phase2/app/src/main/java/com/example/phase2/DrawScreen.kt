@@ -1,7 +1,7 @@
 package com.example.phase2
 
-import android.graphics.Bitmap
-import android.icu.text.ListFormatter.Width
+import android.content.Context
+import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -9,17 +9,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -32,69 +29,42 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.core.graphics.createBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
 
-@Preview(showBackground = true)
-@Composable
-fun DrawScreenPreview() {
-    val navController = rememberNavController() // Create a dummy NavController
-    DrawScreen(navController = navController)
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class,
-    ExperimentalFoundationApi::class
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalFoundationApi::class,
 )
 @Composable
-fun DrawScreen(navController: NavController) {
-    var presses by remember { mutableIntStateOf(0) }
+fun DrawScreen(navController: NavController, context: Context, paintsRepository: PaintsRepository) {
+    var presses by remember { mutableStateOf(0) }
     var sliderPosition by remember { mutableStateOf(10f) }
     var clickedBtn by remember { mutableStateOf(-1) }
     var isSliderDialogOpen by remember { mutableStateOf(false) }
+    var isSaveDialogOpen by remember { mutableStateOf(false) }
     val viewModel: PaintViewModel = viewModel()
-    var isSaveDialogOpen by remember {
-        mutableStateOf(false)
-    }
-
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp.dp
-    val screenHeightDp = configuration.screenHeightDp.dp
-
-    val density = LocalDensity.current.density
-    val screenWidth = (screenWidthDp.value * density).roundToInt()
-    val screenHeight = (screenHeightDp.value * density).roundToInt()
-
 
     val icons = listOf(
         painterResource(R.drawable.baseline_draw_24),
@@ -107,33 +77,7 @@ fun DrawScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFF800080))
-                ,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                Image(
-                    painter = painterResource(id = R.drawable.paints),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .background(Color(0xFF800080)), // Color.Purple
-                )
-                IconButton(
-                    onClick = { navController.navigate(Screen.LoginScreen.route) },
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Account User"
-                    )
-                }
-            }
-
+            // Top app bar content
         },
         bottomBar = {
             BottomAppBar(
@@ -141,42 +85,31 @@ fun DrawScreen(navController: NavController) {
                 contentColor = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .fillMaxWidth(),
-            )
-            {
-                Column(modifier = Modifier.fillMaxSize()){
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
                     Row(
-
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
-                        // evenly space the icons
-                    )
-                    {
+                    ) {
                         for (i in 0 until icons.size) {
                             val isClicked = i == clickedBtn
 
                             AnimatedIconButton(
                                 icon = icons[i],
                                 onClick = {
-                                    // Toggle the button's state
                                     if (isClicked) {
-                                        // Self-clicked, unclick all buttons
                                         clickedBtn = -1
-
-                                    }
-                                    else {
-                                        // Clicked a different button, unclick others
+                                    } else {
                                         clickedBtn = i
                                     }
 
-                                    if(i == 0){
+                                    if (i == 0) {
                                         isSliderDialogOpen = !isSliderDialogOpen
                                     }
-                                    if( i == 1){
+                                    if (i == 1) {
                                         viewModel.updateLineColor(Color.Green)
                                     }
-
                                 },
-
                                 isClicked = isClicked,
                                 modifier = Modifier.weight(1f)
                             )
@@ -184,35 +117,37 @@ fun DrawScreen(navController: NavController) {
 
                         if (isSliderDialogOpen) {
                             Dialog(
-                                onDismissRequest = { isSliderDialogOpen = false}
-                            )
-                            {
+                                onDismissRequest = { isSliderDialogOpen = false }
+                            ) {
                                 Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.background), // Background color
+                                        .background(MaterialTheme.colorScheme.background),
                                     shape = MaterialTheme.shapes.medium,
-                                ){
-                                    Column( modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally) {
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
                                         Text(
-                                            text = sliderPosition.toString() ,
+                                            text = sliderPosition.roundToInt().toString(),
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = Color.Black,
                                             modifier = Modifier.padding(bottom = 16.dp)
                                         )
                                         Slider(
-                                            modifier = Modifier.semantics { contentDescription = "Localized Description" },
+                                            modifier = Modifier.semantics { contentDescription = "Slider" },
                                             value = sliderPosition,
-                                            onValueChange = { sliderPosition = it },
+                                            onValueChange = {
+                                                sliderPosition = it
+                                            },
                                             valueRange = 10f..100f,
                                             onValueChangeFinished = {
                                                 viewModel.updateLineStroke(Stroke(sliderPosition))
                                             },
-
-                                            )
+                                        )
                                     }
                                 }
                             }
@@ -221,17 +156,14 @@ fun DrawScreen(navController: NavController) {
                 }
             }
         },
-
         floatingActionButton = {
-            Column(
-                verticalArrangement = Arrangement.Bottom
-            )
-            {
-                FloatingActionButton(onClick = {
+            FloatingActionButton(
+                onClick = {
+                    // Show a confirmation dialog
                     isSaveDialogOpen = true
-                }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
                 }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add")
             }
         }
     )
@@ -241,8 +173,11 @@ fun DrawScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-        ){
+        ) {
             val lines = viewModel.getLines()
+            val drawing = DatabaseHelper(context)
+//            val dName = "painting1"
+//            val lines = deserializeDrawingData(drawing.getDrawingByDrawingName(userID = 1, drawingName = "painting1"))
             val lineColor = viewModel.lineColor
             val lineStroke = viewModel.lineStroke
 
@@ -261,8 +196,7 @@ fun DrawScreen(navController: NavController) {
                             viewModel.addLine(line = line_custom)
                         }
                     }
-            )
-            {
+            ) {
                 lines.forEach { line ->
                     drawLine(
                         color = line.color,
@@ -272,21 +206,90 @@ fun DrawScreen(navController: NavController) {
                         cap = StrokeCap.Round
                     )
                 }
+            }
 
+            // Save Drawing Confirmation Dialog
+            if (isSaveDialogOpen) {
+                SaveDrawingDialog(
+                    onSave = {
+                        // Save the drawing
+                        val lines = viewModel.getLines()
+                        val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
+                        val userId = 1 // Replace with the actual user ID
+                        val dbHelper = DatabaseHelper(context)
+                        val drawingName = "painting1"
+
+                        Thread {
+//                            val id = dbHelper.insertDrawing(userId, drawingName = drawingName, drawingData)
+                            val paintsData = PaintsData(
+                                userId = userId.toLong(),
+                                drawingName = drawingName,
+                                drawingData = drawingData
+                            )
+
+                            runBlocking {
+                                paintsRepository.insertPaintsData(paintsData)
+                            }
+//                            Log.e("id", id.toString())
+//                            if (id > 0) {
+//                                // Drawing saved successfully
+//                                Log.e("data saved", "true")
+//
+//                            } else {
+//                                // Handle save failure
+//                                Log.e("data saved", "failed")
+//                            }
+                        }.start()
+
+                        isSaveDialogOpen = false
+                    },
+                    onDismiss = {
+                        isSaveDialogOpen = false // Close the dialog on dismiss
+                    }
+                )
             }
         }
-
-
-
     }
+}
 
-    fun convertToBitMap(lines: List<Line>) : Bitmap {
-        val bitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888)
-
-        val canvas = Canvas(bitmap)
+@Composable
+fun SaveDrawingDialog(
+    onSave: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    // Create and display your custom dialog here
+    // Include buttons for confirmation and dismissal
+    // You can use a Dialog Composable or a custom AlertDialog
+    // Example using Dialog Composable:
+    Dialog(
+        onDismissRequest = { onDismiss() }
+    ) {
+        // Dialog content and buttons
+        // Include a button to confirm the save action
+        Button(
+            onClick = {
+                onSave()
+                onDismiss()
+            }
+        ) {
+            Text("Confirm Save")
+        }
+        // Include a button to dismiss the dialog
+        Button(
+            onClick = {
+                onDismiss()
+            }
+        ) {
+            Text("Cancel")
+        }
     }
+}
 
 
+fun deserializeDrawingData(drawingData: Any?): List<Line> {
+    val gson = Gson()
+    val listType = object : TypeToken<List<Line>>() {}.type
+    return gson.fromJson(drawingData.toString(), listType)
 }
 
 @Composable
@@ -307,53 +310,8 @@ fun AnimatedIconButton(
     ) {
         Image(
             painter = icon,
-            contentDescription = null, // Provide an appropriate content description
+            contentDescription = null,
             modifier = Modifier.fillMaxSize(),
         )
     }
 }
-
-@Composable
-fun DrawCanvas(
-    modifier: Modifier,
-    lines: List<Line>,
-    linesColor: Color,
-    linesStroke: Dp
-){
-    val density = LocalDensity.current.density
-    val strokePx = with(LocalDensity.current) {linesStroke.toPx()}
-    val paint = remember {
-        Paint().apply {
-            color = linesColor
-            strokeWidth = strokePx
-            isAntiAlias = true
-            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-        }
-    }
-
-    AndroidView(
-        modifier = modifier,
-        factory = {context ->
-            val bitmapWidth = context.resources.displayMetrics.widthPixels
-            val bitmapHeight = context.resources.displayMetrics.heightPixels
-            createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888)
-        },
-        update = {canvasBitmap ->
-
-            val canvas = canvasBitmap.nativeCanvas
-
-            canvas.drawColor(Color.White.toArgb()) // Clear the canvas
-
-            lines.forEach { line ->
-                canvas.drawLine(
-                    line.start.x,
-                    line.start.y,
-                    line.end.x,
-                    line.end.y,
-                    paint
-                )
-            }
-        }
-    )
-}
-

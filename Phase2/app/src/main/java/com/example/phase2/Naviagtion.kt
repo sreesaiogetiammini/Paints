@@ -1,5 +1,6 @@
 package com.example.phase2
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
@@ -7,7 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun Navigation(){
+fun Navigation(context: Context) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val databaseHelper = DatabaseHelper(context)
@@ -25,7 +26,7 @@ fun Navigation(){
             UserScreen(navController = navController)
         }
         composable(route = Screen.DrawScreen.route){
-            DrawScreen(navController = navController)
+            DrawScreen(navController = navController, context = context)
         }
 
         // Add this if you have a separate SignUpScreen
