@@ -1,12 +1,15 @@
 package com.example.phase2
 
+import android.content.Context
 import androidx.annotation.WorkerThread
 import androidx.lifecycle.LiveData
 import kotlinx.coroutines.CoroutineScope
 
 class PaintsRepository(
     val scope: CoroutineScope,
-    private val paintsDao: PaintsDao) {
+    private val paintsDao: PaintsDao,
+    context: Context
+) {
 
     // Room executes all queries on a separate thread.
     // Observed LiveData will notify the observer when the data has changed.

@@ -50,6 +50,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
 
@@ -58,7 +59,7 @@ import kotlin.math.roundToInt
     ExperimentalFoundationApi::class,
 )
 @Composable
-fun DrawScreen(navController: NavController, context: Context, paintsRepository: PaintsRepository) {
+fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository) {
     var presses by remember { mutableStateOf(0) }
     var sliderPosition by remember { mutableStateOf(10f) }
     var clickedBtn by remember { mutableStateOf(-1) }
@@ -160,6 +161,7 @@ fun DrawScreen(navController: NavController, context: Context, paintsRepository:
             FloatingActionButton(
                 onClick = {
                     // Show a confirmation dialog
+
                     isSaveDialogOpen = true
                 }
             ) {
@@ -175,12 +177,12 @@ fun DrawScreen(navController: NavController, context: Context, paintsRepository:
                 .padding(innerPadding)
         ) {
             val lines = viewModel.getLines()
-            val drawing = DatabaseHelper(context)
+//            val drawing = DatabaseHelper(context)
 //            val dName = "painting1"
 //            val lines = deserializeDrawingData(drawing.getDrawingByDrawingName(userID = 1, drawingName = "painting1"))
             val lineColor = viewModel.lineColor
             val lineStroke = viewModel.lineStroke
-
+            val scope = rememberCoroutineScope()
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -210,37 +212,33 @@ fun DrawScreen(navController: NavController, context: Context, paintsRepository:
 
             // Save Drawing Confirmation Dialog
             if (isSaveDialogOpen) {
-                SaveDrawingDialog(
-                    onSave = {
-                        // Save the drawing
-                        val lines = viewModel.getLines()
-                        val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
-                        val userId = 1 // Replace with the actual user ID
-                        val dbHelper = DatabaseHelper(context)
-                        val drawingName = "painting1"
 
-                        Thread {
-//                            val id = dbHelper.insertDrawing(userId, drawingName = drawingName, drawingData)
+                SaveDrawingDialog(
+
+                    onSave = {
+
+                        scope.launch {
+                            val lines = viewModel.getLines()
+                            val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
+                            val userId = 1 // Replace with the actual user ID
+//                            val dbHelper = DatabaseHelper(context)
+                            val drawingName = "painting1"
+
                             val paintsData = PaintsData(
                                 userId = userId.toLong(),
                                 drawingName = drawingName,
                                 drawingData = drawingData
                             )
 
-                            runBlocking {
-                                paintsRepository.insertPaintsData(paintsData)
-                            }
-//                            Log.e("id", id.toString())
+                            paintsRepository.insertPaintsData(paintsData)
 //                            if (id > 0) {
 //                                // Drawing saved successfully
 //                                Log.e("data saved", "true")
-//
 //                            } else {
 //                                // Handle save failure
 //                                Log.e("data saved", "failed")
 //                            }
-                        }.start()
-
+                        }
                         isSaveDialogOpen = false
                     },
                     onDismiss = {

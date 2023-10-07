@@ -12,6 +12,7 @@ fun Navigation(context: Context) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val databaseHelper = DatabaseHelper(context)
+    val application = PaintsApplication()
 
     NavHost(navController = navController, startDestination = Screen.SpalshScreen.route ){
         // Our Team Logo should be here
@@ -26,7 +27,7 @@ fun Navigation(context: Context) {
             UserScreen(navController = navController)
         }
         composable(route = Screen.DrawScreen.route){
-            DrawScreen(navController = navController, context = context)
+            DrawScreen(navController = navController, paintsRepository = application.paintsRepository)
         }
 
         // Add this if you have a separate SignUpScreen
