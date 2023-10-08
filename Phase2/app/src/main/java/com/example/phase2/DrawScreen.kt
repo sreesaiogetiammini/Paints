@@ -1,6 +1,5 @@
 package com.example.phase2
 
-import android.content.Context
 import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
@@ -38,7 +37,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -176,13 +174,22 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository)
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            val lines = viewModel.getLines()
+//            val lines = viewModel.getLines()
 //            val drawing = DatabaseHelper(context)
 //            val dName = "painting1"
-//            val lines = deserializeDrawingData(drawing.getDrawingByDrawingName(userID = 1, drawingName = "painting1"))
-            val lineColor = viewModel.lineColor
-            val lineStroke = viewModel.lineStroke
+            var lines by remember { mutableStateOf(emptyList<Line>()) }
+            val lineColor by rememberUpdatedState(viewModel.lineColor)
+            val lineStroke by rememberUpdatedState(viewModel.lineStroke)
             val scope = rememberCoroutineScope()
+//            val lines = deserializeDrawingData(paintsRepository.getDrawingByDrawingName( drawingName = "painting1", userId = 1))
+            LaunchedEffect(Unit){
+                val drawingData = paintsRepository.getDrawingByDrawingName( drawingName = "painting1", userId = 1)
+
+                if (drawingData != null) {
+                    lines = deserializeDrawingData(drawingData.drawingData)
+                }
+            }
+
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -195,6 +202,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository)
                                 color = lineColor.value,
                                 strokeWidth = lineStroke.value,
                             )
+                            lines = lines + line_custom // Append the new line to the list of lines
                             viewModel.addLine(line = line_custom)
                         }
                     }
@@ -212,11 +220,8 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository)
 
             // Save Drawing Confirmation Dialog
             if (isSaveDialogOpen) {
-
                 SaveDrawingDialog(
-
                     onSave = {
-
                         scope.launch {
                             val lines = viewModel.getLines()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
@@ -229,15 +234,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository)
                                 drawingName = drawingName,
                                 drawingData = drawingData
                             )
-
                             paintsRepository.insertPaintsData(paintsData)
-//                            if (id > 0) {
-//                                // Drawing saved successfully
-//                                Log.e("data saved", "true")
-//                            } else {
-//                                // Handle save failure
-//                                Log.e("data saved", "failed")
-//                            }
                         }
                         isSaveDialogOpen = false
                     },
@@ -284,10 +281,10 @@ fun SaveDrawingDialog(
 }
 
 
-fun deserializeDrawingData(drawingData: Any?): List<Line> {
+fun deserializeDrawingData(drawingData: String?): List<Line> {
     val gson = Gson()
     val listType = object : TypeToken<List<Line>>() {}.type
-    return gson.fromJson(drawingData.toString(), listType)
+    return gson.fromJson(drawingData, listType)
 }
 
 @Composable

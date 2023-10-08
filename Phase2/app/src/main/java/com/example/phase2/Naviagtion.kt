@@ -2,7 +2,6 @@ package com.example.phase2
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -10,9 +9,9 @@ import androidx.navigation.compose.rememberNavController
 @Composable
 fun Navigation(context: Context) {
     val navController = rememberNavController()
-    val context = LocalContext.current
+//    val context = LocalContext.current
     val databaseHelper = DatabaseHelper(context)
-    val application = PaintsApplication()
+    val application = PaintsApplication(context)
 
     NavHost(navController = navController, startDestination = Screen.SpalshScreen.route ){
         // Our Team Logo should be here
