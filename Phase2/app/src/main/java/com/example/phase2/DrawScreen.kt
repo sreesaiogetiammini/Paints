@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +29,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,8 +38,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -46,24 +51,34 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.github.skydoves.colorpicker.compose.ColorEnvelope
+import com.github.skydoves.colorpicker.compose.ColorPickerController
+import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
 
+
 @OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalFoundationApi::class,
 )
 @Composable
-fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository) {
+fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository, drawingName: String) {
     var presses by remember { mutableStateOf(0) }
     var sliderPosition by remember { mutableStateOf(10f) }
     var clickedBtn by remember { mutableStateOf(-1) }
     var isSliderDialogOpen by remember { mutableStateOf(false) }
     var isSaveDialogOpen by remember { mutableStateOf(false) }
     val viewModel: PaintViewModel = viewModel()
+
+    var isColorPickerDialogVisible by remember { mutableStateOf(false) }
+    var selectedLineColor by remember { mutableStateOf(Color.Green) } // Default color
+    val lightColors = lightColorScheme()
+
+    var paintingName by remember { mutableStateOf(drawingName) }
 
     val icons = listOf(
         painterResource(R.drawable.baseline_draw_24),
@@ -106,7 +121,11 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository)
                                         isSliderDialogOpen = !isSliderDialogOpen
                                     }
                                     if (i == 1) {
-                                        viewModel.updateLineColor(Color.Green)
+//                                        isColorPickerDialogVisible = true
+                                        Log.e("Stroke change", "changed stroke")
+                                    }
+                                    if(i == 2){
+                                        isColorPickerDialogVisible = true
                                     }
                                 },
                                 isClicked = isClicked,
@@ -174,21 +193,24 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository)
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-//            val lines = viewModel.getLines()
-//            val drawing = DatabaseHelper(context)
-//            val dName = "painting1"
             var lines by remember { mutableStateOf(emptyList<Line>()) }
             val lineColor by rememberUpdatedState(viewModel.lineColor)
             val lineStroke by rememberUpdatedState(viewModel.lineStroke)
             val scope = rememberCoroutineScope()
-//            val lines = deserializeDrawingData(paintsRepository.getDrawingByDrawingName( drawingName = "painting1", userId = 1))
-            LaunchedEffect(Unit){
-                val drawingData = paintsRepository.getDrawingByDrawingName( drawingName = "painting1", userId = 1)
 
-                if (drawingData != null) {
-                    lines = deserializeDrawingData(drawingData.drawingData)
+            if(drawingName.isNotBlank() && drawingName != "dummy") {
+                LaunchedEffect(Unit){
+                    val drawingData = paintsRepository.getDrawingByDrawingName( drawingName = paintingName, userId = 1)
+
+                    if (drawingData != null) {
+                        lines = deserializeDrawingData(drawingData.drawingData)
+                        for (line in lines) {
+                            viewModel.addLine(line)
+                        }
+                    }
                 }
             }
+
 
             Canvas(
                 modifier = Modifier
@@ -218,6 +240,45 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository)
                 }
             }
 
+            if (isColorPickerDialogVisible) {
+                Dialog(
+                    onDismissRequest = {
+                        // Close the color picker dialog
+                        isColorPickerDialogVisible = false
+                    }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(450.dp)
+                            .padding(10.dp)
+                    ) {
+                        HsvColorPicker(
+                            modifier = Modifier.fillMaxSize(),
+                            controller = ColorPickerController(),
+                            onColorChanged = { colorEnvelope: ColorEnvelope ->
+                                selectedLineColor = Color(colorEnvelope.color.toArgb())
+                                viewModel.lineColor.value = selectedLineColor
+                            }
+                        )
+
+                        // Close button
+                        IconButton(
+                            onClick = {
+                                isColorPickerDialogVisible = false
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                }
+
+
+            }
+
             // Save Drawing Confirmation Dialog
             if (isSaveDialogOpen) {
                 SaveDrawingDialog(
@@ -226,57 +287,115 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository)
                             val lines = viewModel.getLines()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
                             val userId = 1 // Replace with the actual user ID
-//                            val dbHelper = DatabaseHelper(context)
-                            val drawingName = "painting1"
+//                            val drawingName = "painting1"
 
-                            val paintsData = PaintsData(
-                                userId = userId.toLong(),
-                                drawingName = drawingName,
-                                drawingData = drawingData
-                            )
-                            paintsRepository.insertPaintsData(paintsData)
+                            if(paintingName.isNotBlank()) {
+                                val paintsData = PaintsData(
+                                    userId = userId.toLong(),
+                                    drawingName = paintingName,
+                                    drawingData = drawingData
+                                )
+
+                                val existingDrawingData = paintsRepository.getDrawingByDrawingName(
+                                    drawingName = paintingName,
+                                    userId = 1
+                                )
+
+                                if (existingDrawingData != null) {
+                                    // Update the existing painting
+                                    existingDrawingData.drawingData = drawingData
+                                    paintsRepository.updatePaintsData(existingDrawingData)
+
+                                    // need to add update paints data.
+                                } else {
+                                    // Insert a new painting
+                                    paintsRepository.insertPaintsData(paintsData)
+                                }
+                            }
+//                            paintsRepository.insertPaintsData(paintsData)
                         }
                         isSaveDialogOpen = false
                     },
                     onDismiss = {
                         isSaveDialogOpen = false // Close the dialog on dismiss
-                    }
+                    },
+                    onNameChange = { name ->
+                        paintingName = name // Update the painting name
+                    },
+                    initalName = drawingName
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SaveDrawingDialog(
     onSave: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onNameChange: (String) -> Unit,
+    initalName: String
 ) {
     // Create and display your custom dialog here
     // Include buttons for confirmation and dismissal
     // You can use a Dialog Composable or a custom AlertDialog
     // Example using Dialog Composable:
+    var paintingName by remember { mutableStateOf(initalName) }
     Dialog(
         onDismissRequest = { onDismiss() }
     ) {
+
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ){
+            TextField(
+                value = paintingName,
+                onValueChange = {
+                    paintingName = it
+                    onNameChange(it) // Callback to handle painting name changes
+                },
+                label = { Text("Painting Name") }
+            )
+
+            // Include a button to confirm the save action
+            Button(
+                onClick = {
+                    onSave()
+                    onDismiss()
+                }
+            ) {
+                Text("Confirm Save")
+            }
+
+            // Include a button to dismiss the dialog
+            Button(
+                onClick = {
+                    onDismiss()
+                }
+            ) {
+                Text("Cancel")
+            }
+        }
         // Dialog content and buttons
         // Include a button to confirm the save action
-        Button(
-            onClick = {
-                onSave()
-                onDismiss()
-            }
-        ) {
-            Text("Confirm Save")
-        }
-        // Include a button to dismiss the dialog
-        Button(
-            onClick = {
-                onDismiss()
-            }
-        ) {
-            Text("Cancel")
-        }
+//        Button(
+//            onClick = {
+//                onSave()
+//                onDismiss()
+//            }
+//        ) {
+//            Text("Confirm Save")
+//        }
+//        // Include a button to dismiss the dialog
+//        Button(
+//            onClick = {
+//                onDismiss()
+//            }
+//        ) {
+//            Text("Cancel")
+//        }
     }
 }
 

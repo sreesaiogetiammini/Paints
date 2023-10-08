@@ -15,7 +15,7 @@ class PaintViewModel: ViewModel(){
 
     private val lines = mutableStateListOf<Line>()
     private val _lineColor = mutableStateOf(Color.Black)
-    val lineColor = _lineColor
+    var lineColor = _lineColor
 
     private val _lineStroke = mutableStateOf(Stroke(10f))
     val lineStroke = _lineStroke

@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.annotation.WorkerThread
 import androidx.lifecycle.LiveData
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class PaintsRepository(
     val scope: CoroutineScope,
@@ -23,5 +25,22 @@ class PaintsRepository(
     @WorkerThread
     suspend fun getDrawingByDrawingName(drawingName: String, userId: Long): PaintsData? {
         return paintsDao.getDrawingByDrawingName(drawingName, userId)
+    }
+
+    @WorkerThread
+    suspend fun updatePaintsData(paintsData: PaintsData) {
+        paintsDao.updatePaintsData(paintsData)
+    }
+
+    @WorkerThread
+    fun getPaintingsByUserId(userId: Long): List<PaintsData> {
+        return paintsDao.getPaintingsByUserId(userId)
+    }
+
+    @WorkerThread
+    suspend fun getPaintingNamesByUserId(userId: Long): List<String> {
+        return withContext(Dispatchers.IO) {
+            paintsDao.getDrawingNamesByUserId(userId)
+        }
     }
 }

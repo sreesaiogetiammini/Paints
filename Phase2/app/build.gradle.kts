@@ -94,4 +94,11 @@ dependencies {
     implementation("androidx.room:room-common:2.5.2")
     implementation("androidx.room:room-ktx:2.5.2")
 
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0")
+
+
+
+    implementation ("com.github.skydoves:colorpicker-compose:1.0.5")
+
 }

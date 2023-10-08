@@ -8,6 +8,8 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.Update
+import java.util.concurrent.Flow
 
 @Database(
     entities = [PaintsData :: class],
@@ -45,6 +47,15 @@ interface PaintsDao {
 
     @Query("SELECT * FROM paints WHERE drawingName = :drawingName AND userId = :userId LIMIT 1")
     suspend fun getDrawingByDrawingName(drawingName: String, userId: Long): PaintsData?
+
+    @Update
+    suspend fun updatePaintsData(paintsData: PaintsData)
+
+    @Query("SELECT * FROM paints WHERE userId = :userId")
+    fun getPaintingsByUserId(userId: Long): List<PaintsData>
+
+    @Query("SELECT drawingName FROM paints WHERE userId = :userId")
+    fun getDrawingNamesByUserId(userId: Long): List<String>
 
 //    @Query("SELECT * FROM paints")
 //    suspend fun getAllPaintsData(): LiveData<List<PaintsData>>

@@ -23,10 +23,17 @@ fun Navigation(context: Context) {
             LoginSignupScreen(navController = navController, databaseHelper = databaseHelper)
         }
         composable(route = Screen.UserScreen.route){
-            UserScreen(navController = navController)
+
+            UserScreen(navController = navController, paintsRepository = application.paintsRepository)
         }
-        composable(route = Screen.DrawScreen.route){
-            DrawScreen(navController = navController, paintsRepository = application.paintsRepository)
+        composable(route = Screen.DrawScreen.route + "/{drawingName}"){
+            var drawingName = it.arguments?.getString("drawingName")
+            if (drawingName != null && drawingName != "dummy") {
+                DrawScreen(navController = navController, paintsRepository = application.paintsRepository, drawingName)
+            } else {
+                drawingName = "dummy"
+                DrawScreen(navController = navController, paintsRepository = application.paintsRepository, drawingName)
+            }
         }
 
         // Add this if you have a separate SignUpScreen
