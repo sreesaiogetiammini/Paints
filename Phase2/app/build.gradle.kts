@@ -97,6 +97,8 @@ dependencies {
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0")
 
+    testImplementation ("org.mockito:mockito-core:3.11.2")
+
 
 
     implementation ("com.github.skydoves:colorpicker-compose:1.0.5")

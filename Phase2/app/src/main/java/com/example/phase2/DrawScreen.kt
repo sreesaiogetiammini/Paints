@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,25 +75,57 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
     var isSliderDialogOpen by remember { mutableStateOf(false) }
     var isSaveDialogOpen by remember { mutableStateOf(false) }
     val viewModel: PaintViewModel = viewModel()
-
     var isColorPickerDialogVisible by remember { mutableStateOf(false) }
     var selectedLineColor by remember { mutableStateOf(Color.Green) } // Default color
-    val lightColors = lightColorScheme()
-
     var paintingName by remember { mutableStateOf(drawingName) }
-
     val icons = listOf(
         painterResource(R.drawable.baseline_draw_24),
         painterResource(R.drawable.baseline_line_style_24),
         painterResource(R.drawable.baseline_color_lens_24),
         painterResource(R.drawable.erasor),
         painterResource(R.drawable.baseline_text_fields_24),
-        painterResource(R.drawable.baseline_image_24)
+        painterResource(R.drawable.baseline_image_24) ,
+        painterResource(R.drawable.baseline_clear_all_24)
     )
+    var isCapDialogOpen by remember { mutableStateOf(false) }
+    val myViewModel: PaintViewModel = viewModel()
 
     Scaffold(
         topBar = {
             // Top app bar content
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF800080)),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.paints),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .background(Color(0xFF800080)), // Color.Purple
+                    )
+                    IconButton(
+                        onClick = { navController.navigate(Screen.LoginScreen.route) },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Account User"
+                        )
+                    }
+                    IconButton(
+                        onClick = { navController.navigate(Screen.UserScreen.route) },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Home,
+                            contentDescription = "Account Home"
+                        )
+                    }
+                }
         },
         bottomBar = {
             BottomAppBar(
@@ -122,10 +156,13 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                     }
                                     if (i == 1) {
 //                                        isColorPickerDialogVisible = true
-                                        Log.e("Stroke change", "changed stroke")
+                                        isCapDialogOpen = !isCapDialogOpen
                                     }
                                     if(i == 2){
                                         isColorPickerDialogVisible = true
+                                    }
+                                    if(i == 6){
+                                        myViewModel.clearLines()
                                     }
                                 },
                                 isClicked = isClicked,
@@ -133,56 +170,37 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             )
                         }
 
-                        if (isSliderDialogOpen) {
-                            Dialog(
-                                onDismissRequest = { isSliderDialogOpen = false }
-                            ) {
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.background),
-                                    shape = MaterialTheme.shapes.medium,
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = sliderPosition.roundToInt().toString(),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.Black,
-                                            modifier = Modifier.padding(bottom = 16.dp)
-                                        )
-                                        Slider(
-                                            modifier = Modifier.semantics { contentDescription = "Slider" },
-                                            value = sliderPosition,
-                                            onValueChange = {
-                                                sliderPosition = it
-                                            },
-                                            valueRange = 10f..100f,
-                                            onValueChangeFinished = {
-                                                viewModel.updateLineStroke(Stroke(sliderPosition))
-                                            },
-                                        )
-                                    }
+                        if(isCapDialogOpen){
+                            addCapDialog(myViewModel = myViewModel,
+                                onDialogDismiss = {
+                                    isCapDialogOpen = !isCapDialogOpen
+                                })
+                        }
+
+                        if (isSliderDialogOpen)
+                        {
+                            addSliderDialog(
+                                myViewModel = myViewModel,
+                                sliderPosition = sliderPosition,
+                                onDialogDismiss = {
+                                    isSliderDialogOpen = !isSliderDialogOpen
                                 }
-                            }
+                            )
                         }
                     }
                 }
             }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    // Show a confirmation dialog
-
+            FloatingActionButton(onClick = { presses++ }) {
+                Button(onClick = {
                     isSaveDialogOpen = true
+                }) {
+                    Icon(
+                        painterResource(id = R.drawable.baseline_save_as_24),
+                        contentDescription = "Save As"
+                    )
                 }
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
             }
         }
     )
@@ -258,7 +276,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             controller = ColorPickerController(),
                             onColorChanged = { colorEnvelope: ColorEnvelope ->
                                 selectedLineColor = Color(colorEnvelope.color.toArgb())
-                                viewModel.lineColor.value = selectedLineColor
+                                viewModel.updateLineColor(selectedLineColor)
                             }
                         )
 
@@ -312,7 +330,6 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                     paintsRepository.insertPaintsData(paintsData)
                                 }
                             }
-//                            paintsRepository.insertPaintsData(paintsData)
                         }
                         isSaveDialogOpen = false
                     },
@@ -378,24 +395,6 @@ fun SaveDrawingDialog(
                 Text("Cancel")
             }
         }
-        // Dialog content and buttons
-        // Include a button to confirm the save action
-//        Button(
-//            onClick = {
-//                onSave()
-//                onDismiss()
-//            }
-//        ) {
-//            Text("Confirm Save")
-//        }
-//        // Include a button to dismiss the dialog
-//        Button(
-//            onClick = {
-//                onDismiss()
-//            }
-//        ) {
-//            Text("Cancel")
-//        }
     }
 }
 
@@ -429,3 +428,100 @@ fun AnimatedIconButton(
         )
     }
 }
+
+@Composable
+fun addSliderDialog(myViewModel:PaintViewModel, onDialogDismiss: () -> Unit, sliderPosition:Float){
+    var sliderPosition by remember { mutableFloatStateOf(sliderPosition) }
+
+    Dialog(
+        onDismissRequest = {
+            onDialogDismiss()
+        }
+    )
+    {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background), // Background color
+            shape = MaterialTheme.shapes.medium,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = sliderPosition.toString(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Black,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Slider(
+                    modifier = Modifier.semantics {
+                        contentDescription = "Localized Description"
+                    },
+                    value = sliderPosition,
+                    onValueChange = { sliderPosition = it },
+                    valueRange = 10f..100f,
+                    onValueChangeFinished = {
+                        myViewModel.updatePathStrokeWidth(sliderPosition)
+                    },
+                )
+            }
+        }
+    }
+
+
+
+}
+
+@Composable
+fun addCapDialog(myViewModel:PaintViewModel, onDialogDismiss: () -> Unit){
+    Dialog(
+        onDismissRequest = {   onDialogDismiss() }
+    )
+    {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background), // Background color
+            shape = MaterialTheme.shapes.medium,
+        ) {
+            Column( modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally) {
+
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                )
+                {
+                    Button(onClick = {myViewModel.updatePathStrokeCap(StrokeCap.Butt)}) {
+                        Icon(
+                            painterResource(id = R.drawable.baseline_butt_24),
+                            contentDescription = "Butt Cap"
+                        )
+                    }
+                    Button(onClick = {myViewModel.updatePathStrokeCap(StrokeCap.Square)}) {
+                        Icon(
+                            painterResource(id = R.drawable.baseline_square_24),
+                            contentDescription = "Square Cap"
+                        )
+                    }
+                    Button(onClick = {myViewModel.updatePathStrokeCap(StrokeCap.Round)}) {
+                        Icon(
+                            painterResource(id = R.drawable.baseline_circle_24),
+                            contentDescription = "Round Cap"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+

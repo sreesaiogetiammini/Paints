@@ -6,10 +6,15 @@ import android.graphics.Paint
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.lifecycle.ViewModel
 
 class PaintViewModel: ViewModel(){
+
+
+    private val _pathColor = mutableStateOf(Color.Black)
+    val pathColor = _pathColor
 
 
 
@@ -40,6 +45,18 @@ class PaintViewModel: ViewModel(){
     fun updateLineStroke(newStroke: Stroke) {
         _lineStroke.value = newStroke
     }
+
+    fun updatePathStrokeCap(strokeCap: StrokeCap) {
+        val updatedStroke = Stroke(cap = strokeCap, width = lineStroke.value.width)
+        lineStroke.value = updatedStroke
+    }
+
+    fun updatePathStrokeWidth(strokeWidth:  Float) {
+        val updatedStroke = Stroke(width = strokeWidth,cap = lineStroke.value.cap)
+        lineStroke.value = updatedStroke
+    }
+
+
 }
 
 
