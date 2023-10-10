@@ -1,16 +1,17 @@
 package com.example.phase2
 
+import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun Navigation(){
+fun Navigation(context: Context) {
     val navController = rememberNavController()
-    val context = LocalContext.current
+//    val context = LocalContext.current
     val databaseHelper = DatabaseHelper(context)
+    val application = PaintsApplication(context)
 
     NavHost(navController = navController, startDestination = Screen.SpalshScreen.route ){
         // Our Team Logo should be here
@@ -22,10 +23,17 @@ fun Navigation(){
             LoginSignupScreen(navController = navController, databaseHelper = databaseHelper)
         }
         composable(route = Screen.UserScreen.route){
-            UserScreen(navController = navController)
+
+            UserScreen(navController = navController, paintsRepository = application.paintsRepository)
         }
-        composable(route = Screen.DrawScreen.route){
-            DrawScreen(navController = navController)
+        composable(route = Screen.DrawScreen.route + "/{drawingName}"){
+            var drawingName = it.arguments?.getString("drawingName")
+            if (drawingName != null && drawingName != "dummy") {
+                DrawScreen(navController = navController, paintsRepository = application.paintsRepository, drawingName)
+            } else {
+                drawingName = "dummy"
+                DrawScreen(navController = navController, paintsRepository = application.paintsRepository, drawingName)
+            }
         }
 
         // Add this if you have a separate SignUpScreen

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Phase2</string>
+    <string name="dummy">New Painting</string>
 </resources>
