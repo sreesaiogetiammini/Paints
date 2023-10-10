@@ -1,9 +1,10 @@
 package com.example.phase2
 
-import androidx.compose.runtime.State
+
+
+import android.graphics.Paint
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -11,56 +12,51 @@ import androidx.lifecycle.ViewModel
 
 class PaintViewModel: ViewModel(){
 
-    private val paths = mutableStateListOf<MyPath>()
 
     private val _pathColor = mutableStateOf(Color.Black)
     val pathColor = _pathColor
 
-    private val _pathStroke = mutableStateOf(Stroke(10f))
-    val pathStroke = _pathStroke
 
-    private val _text = mutableStateOf("Your Text Here")
-    val text: State<String> = _text
 
-    private val _textPosition = mutableStateOf(Offset(100f, 100f))
-    val textPosition: State<Offset> = _textPosition
+    private val lines = mutableStateListOf<Line>()
+    private val _lineColor = mutableStateOf(Color.Black)
+    var lineColor = _lineColor
 
-    fun addPath(path: MyPath) {
-        paths.add(path)
+    private val _lineStroke = mutableStateOf(Stroke(10f))
+    val lineStroke = _lineStroke
+
+    fun addLine(line: Line) {
+        lines.add(line)
     }
 
-    fun clearPaths() {
-        paths.clear()
+    fun clearLines() {
+        lines.clear()
     }
-    fun getPaths(): List<MyPath> {
-        return paths
+    fun getLines(): List<Line> {
+        return lines
     }
 
 
     // Functions to update line color and stroke
-    fun updatePathColor(newColor: Color) {
-        _pathColor.value = newColor
+    fun updateLineColor(newColor: Color) {
+        _lineColor.value = newColor
+    }
+
+    fun updateLineStroke(newStroke: Stroke) {
+        _lineStroke.value = newStroke
     }
 
     fun updatePathStrokeCap(strokeCap: StrokeCap) {
-        val updatedStroke = Stroke(cap = strokeCap, width = _pathStroke.value.width)
-        _pathStroke.value = updatedStroke
+        val updatedStroke = Stroke(cap = strokeCap, width = lineStroke.value.width)
+        lineStroke.value = updatedStroke
     }
-
 
     fun updatePathStrokeWidth(strokeWidth:  Float) {
-        val updatedStroke = Stroke(width = strokeWidth,cap = _pathStroke.value.cap)
-        _pathStroke.value = updatedStroke
-    }
-    // Function to update the text
-    fun updateText(newText: String) {
-        _text.value = newText
+        val updatedStroke = Stroke(width = strokeWidth,cap = lineStroke.value.cap)
+        lineStroke.value = updatedStroke
     }
 
-    // Function to update the text position
-    fun updateTextPosition(newPosition: Offset) {
-        _textPosition.value = newPosition
-    }
+
 }
 
 
