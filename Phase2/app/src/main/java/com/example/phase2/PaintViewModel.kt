@@ -46,12 +46,12 @@ class PaintViewModel: ViewModel(){
         _lineStroke.value = newStroke
     }
 
-    fun updatePathStrokeCap(strokeCap: StrokeCap) {
+    fun updateLineStrokeCap(strokeCap: StrokeCap) {
         val updatedStroke = Stroke(cap = strokeCap, width = lineStroke.value.width)
         lineStroke.value = updatedStroke
     }
 
-    fun updatePathStrokeWidth(strokeWidth:  Float) {
+    fun updateLineStrokeWidth(strokeWidth:  Float) {
         val updatedStroke = Stroke(width = strokeWidth,cap = lineStroke.value.cap)
         lineStroke.value = updatedStroke
     }
