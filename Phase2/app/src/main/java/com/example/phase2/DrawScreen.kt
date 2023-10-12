@@ -3,26 +3,26 @@ package com.example.phase2
 import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,43 +32,43 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import com.github.skydoves.colorpicker.compose.AlphaSlider
+import com.github.skydoves.colorpicker.compose.AlphaTile
+import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.ColorEnvelope
-import com.github.skydoves.colorpicker.compose.ColorPickerController
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
+import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlin.math.roundToInt
 
-
-@OptIn(
-    ExperimentalMaterial3Api::class,
-    ExperimentalFoundationApi::class,
-)
 @Composable
-fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository, drawingName: String) {
+fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository, userId: String,drawingName: String) {
     var presses by remember { mutableStateOf(0) }
     var sliderPosition by remember { mutableStateOf(10f) }
     var clickedBtn by remember { mutableStateOf(-1) }
@@ -78,54 +78,29 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
     var isColorPickerDialogVisible by remember { mutableStateOf(false) }
     var selectedLineColor by remember { mutableStateOf(Color.Green) } // Default color
     var paintingName by remember { mutableStateOf(drawingName) }
+    var lines by remember { mutableStateOf(emptyList<Line>()) }
+    val lineColor by rememberUpdatedState(viewModel.lineColor)
+    val lineStroke by rememberUpdatedState(viewModel.lineStroke)
+    var id by remember { mutableStateOf(userId) }
+    val scope = rememberCoroutineScope()
     val icons = listOf(
         painterResource(R.drawable.baseline_draw_24),
         painterResource(R.drawable.baseline_line_style_24),
         painterResource(R.drawable.baseline_color_lens_24),
+        painterResource(R.drawable.baseline_brush_24),
         painterResource(R.drawable.erasor),
-        painterResource(R.drawable.baseline_text_fields_24),
-        painterResource(R.drawable.baseline_image_24) ,
-        painterResource(R.drawable.baseline_clear_all_24)
+        painterResource(R.drawable.baseline_fiber_new_24)
+//        painterResource(R.drawable.baseline_text_fields_24),
+//        painterResource(R.drawable.baseline_image_24) ,
+
+
     )
     var isCapDialogOpen by remember { mutableStateOf(false) }
     val myViewModel: PaintViewModel = viewModel()
 
     Scaffold(
         topBar = {
-            // Top app bar content
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF800080)),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.paints),
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .background(Color(0xFF800080)), // Color.Purple
-                    )
-                    IconButton(
-                        onClick = { navController.navigate(Screen.LoginScreen.route) },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Account User"
-                        )
-                    }
-                    IconButton(
-                        onClick = { navController.navigate(Screen.UserScreen.route) },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "Account Home"
-                        )
-                    }
-                }
+            topBarStuff(navController = navController, userId = id)
         },
         bottomBar = {
             BottomAppBar(
@@ -155,14 +130,20 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                         isSliderDialogOpen = !isSliderDialogOpen
                                     }
                                     if (i == 1) {
-//                                        isColorPickerDialogVisible = true
                                         isCapDialogOpen = !isCapDialogOpen
                                     }
                                     if(i == 2){
-                                        isColorPickerDialogVisible = true
+                                        isColorPickerDialogVisible = !isColorPickerDialogVisible
                                     }
-                                    if(i == 6){
-                                        myViewModel.clearLines()
+                                    if(i == 3){
+                                        myViewModel.updateLineColor(Color.Black)
+                                    }
+
+                                    if(i == 4){
+                                        myViewModel.updateLineColor(Color.White)
+                                    }
+                                    if(i == 5){
+                                        navController.navigate(Screen.DrawScreen.route + "/$userId" +"/dummy")
                                     }
                                 },
                                 isClicked = isClicked,
@@ -187,6 +168,19 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                 }
                             )
                         }
+
+
+                        if (isColorPickerDialogVisible) {
+                            addColorPickerDialog(
+                                myViewModel = myViewModel,
+                                onDialogDismiss = {
+                                    isColorPickerDialogVisible = !isColorPickerDialogVisible
+                                }
+                            )
+                        }
+
+
+
                     }
                 }
             }
@@ -194,7 +188,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
         floatingActionButton = {
             FloatingActionButton(onClick = { presses++ }) {
                 Button(onClick = {
-                    isSaveDialogOpen = true
+                    isSaveDialogOpen = !isSaveDialogOpen
                 }) {
                     Icon(
                         painterResource(id = R.drawable.baseline_save_as_24),
@@ -210,16 +204,14 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-        ) {
-            var lines by remember { mutableStateOf(emptyList<Line>()) }
-            val lineColor by rememberUpdatedState(viewModel.lineColor)
-            val lineStroke by rememberUpdatedState(viewModel.lineStroke)
-            val scope = rememberCoroutineScope()
+        )
+
+        {
+
 
             if(drawingName.isNotBlank() && drawingName != "dummy") {
                 LaunchedEffect(Unit){
-                    val drawingData = paintsRepository.getDrawingByDrawingName( drawingName = paintingName, userId = 1)
-
+                    val drawingData = paintsRepository.getDrawingByDrawingName( drawingName = paintingName, userId = id.toLong())
                     if (drawingData != null) {
                         lines = deserializeDrawingData(drawingData.drawingData)
                         for (line in lines) {
@@ -253,48 +245,9 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                         start = line.start,
                         end = line.end,
                         strokeWidth = line.strokeWidth.width,
-                        cap = StrokeCap.Round
+                        cap = line.strokeWidth.cap
                     )
                 }
-            }
-
-            if (isColorPickerDialogVisible) {
-                Dialog(
-                    onDismissRequest = {
-                        // Close the color picker dialog
-                        isColorPickerDialogVisible = false
-                    }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(450.dp)
-                            .padding(10.dp)
-                    ) {
-                        HsvColorPicker(
-                            modifier = Modifier.fillMaxSize(),
-                            controller = ColorPickerController(),
-                            onColorChanged = { colorEnvelope: ColorEnvelope ->
-                                selectedLineColor = Color(colorEnvelope.color.toArgb())
-                                viewModel.updateLineColor(selectedLineColor)
-                            }
-                        )
-
-                        // Close button
-                        IconButton(
-                            onClick = {
-                                isColorPickerDialogVisible = false
-                            },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(16.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
-                        }
-                    }
-                }
-
-
             }
 
             // Save Drawing Confirmation Dialog
@@ -304,9 +257,10 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                         scope.launch {
                             val lines = viewModel.getLines()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
-                            val userId = 1 // Replace with the actual user ID
+                            val userId = id // Replace with the actual user ID
 //                            val drawingName = "painting1"
-
+                                Log.e("Send Id",id)
+                                Log.e("Send Name",paintingName)
                             if(paintingName.isNotBlank()) {
                                 val paintsData = PaintsData(
                                     userId = userId.toLong(),
@@ -316,7 +270,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
                                 val existingDrawingData = paintsRepository.getDrawingByDrawingName(
                                     drawingName = paintingName,
-                                    userId = 1
+                                    userId = userId.toLong()
                                 )
 
                                 if (existingDrawingData != null) {
@@ -339,26 +293,69 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                     onNameChange = { name ->
                         paintingName = name // Update the painting name
                     },
-                    initalName = drawingName
+                    initialName = paintingName
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun topBarStuff(navController: NavController,userId:String){
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.paints),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(MaterialTheme.colorScheme.primaryContainer), // Color.Purple
+        )
+        IconButton(
+            onClick = {
+                navController.navigate(Screen.SplashScreen.route)
+
+            },
+        ) {
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "Account User"
+            )
+        }
+        IconButton(
+            onClick = {
+                    navController.navigate(Screen.UserScreen.route+"/$userId" )
+                      },
+        ) {
+            Icon(
+                imageVector = Icons.Default.Home,
+                contentDescription = "Account Home"
+            )
+        }
+    }
+}
+
+
+
 @Composable
 fun SaveDrawingDialog(
     onSave: () -> Unit,
     onDismiss: () -> Unit,
     onNameChange: (String) -> Unit,
-    initalName: String
+    initialName: String
 ) {
     // Create and display your custom dialog here
     // Include buttons for confirmation and dismissal
     // You can use a Dialog Composable or a custom AlertDialog
     // Example using Dialog Composable:
-    var paintingName by remember { mutableStateOf(initalName) }
+    var paintingName by remember { mutableStateOf(initialName) }
     Dialog(
         onDismissRequest = { onDismiss() }
     ) {
@@ -381,7 +378,8 @@ fun SaveDrawingDialog(
                 onClick = {
                     onSave()
                     onDismiss()
-                }
+                },
+                enabled = paintingName.isNotBlank() && paintingName != "dummy" && paintingName.length>3
             ) {
                 Text("Confirm Save")
             }
@@ -390,13 +388,18 @@ fun SaveDrawingDialog(
             Button(
                 onClick = {
                     onDismiss()
-                }
+                },
+
             ) {
                 Text("Cancel")
             }
         }
     }
 }
+
+
+
+
 
 
 fun deserializeDrawingData(drawingData: String?): List<Line> {
@@ -465,7 +468,7 @@ fun addSliderDialog(myViewModel:PaintViewModel, onDialogDismiss: () -> Unit, sli
                     onValueChange = { sliderPosition = it },
                     valueRange = 10f..100f,
                     onValueChangeFinished = {
-                        myViewModel.updatePathStrokeWidth(sliderPosition)
+                        myViewModel.updateLineStrokeWidth(sliderPosition)
                     },
                 )
             }
@@ -499,19 +502,19 @@ fun addCapDialog(myViewModel:PaintViewModel, onDialogDismiss: () -> Unit){
                     horizontalArrangement = Arrangement.SpaceBetween
                 )
                 {
-                    Button(onClick = {myViewModel.updatePathStrokeCap(StrokeCap.Butt)}) {
+                    Button(onClick = {myViewModel.updateLineStrokeCap(StrokeCap.Butt)}) {
                         Icon(
                             painterResource(id = R.drawable.baseline_butt_24),
                             contentDescription = "Butt Cap"
                         )
                     }
-                    Button(onClick = {myViewModel.updatePathStrokeCap(StrokeCap.Square)}) {
+                    Button(onClick = {myViewModel.updateLineStrokeCap(StrokeCap.Square)}) {
                         Icon(
                             painterResource(id = R.drawable.baseline_square_24),
                             contentDescription = "Square Cap"
                         )
                     }
-                    Button(onClick = {myViewModel.updatePathStrokeCap(StrokeCap.Round)}) {
+                    Button(onClick = {myViewModel.updateLineStrokeCap(StrokeCap.Round)}) {
                         Icon(
                             painterResource(id = R.drawable.baseline_circle_24),
                             contentDescription = "Round Cap"
@@ -524,4 +527,95 @@ fun addCapDialog(myViewModel:PaintViewModel, onDialogDismiss: () -> Unit){
 
 }
 
+@Composable
+fun addColorPickerDialog(myViewModel:PaintViewModel,onDialogDismiss: () -> Unit){
+    Dialog(
+        onDismissRequest = {
+            // Close the color picker dialog
 
+        }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(450.dp)
+                .padding(10.dp)
+        ) {
+//            HsvColorPicker(
+//                modifier = Modifier.fillMaxSize(),
+//                controller = ColorPickerController(),
+//                onColorChanged = { colorEnvelope: ColorEnvelope ->
+//                    val selectedLineColor = Color(colorEnvelope.color.toArgb())
+//                    myViewModel.updateLineColor(selectedLineColor)
+//                }
+//            )
+            colorPicker(myViewModel)
+//
+            // Close button
+            IconButton(
+                onClick = {
+                    onDialogDismiss()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
+            }
+
+        }
+    }
+
+}
+
+
+
+@Composable
+fun colorPicker(myViewModel: PaintViewModel){
+    val controller = rememberColorPickerController()
+
+    Column (
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(all = 30.dp)
+    ){
+        Row(modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AlphaTile(modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .clip(RoundedCornerShape(6.dp)),
+                controller = controller
+            )
+        }
+        HsvColorPicker(modifier = Modifier
+            .fillMaxWidth()
+            .height(450.dp)
+            .padding(10.dp)
+            ,
+            controller = controller,
+            onColorChanged = {
+                    colorEnvelope: ColorEnvelope ->
+                    val selectedLineColor = Color(colorEnvelope.color.toArgb())
+                    myViewModel.updateLineColor(selectedLineColor)
+            }
+        )
+        AlphaSlider(modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp)
+            .height(35.dp)
+            ,
+            controller =controller,
+            tileOddColor = Color.White,
+            tileEvenColor = Color.Black
+        )
+        BrightnessSlider(modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp)
+            .height(35.dp)
+            , controller = controller)
+
+    }
+}

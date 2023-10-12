@@ -1,7 +1,5 @@
 package com.example.phase2
 
-
-
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -58,7 +56,26 @@ class DatabaseHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME,
     fun checkUser(email: String, password: String): Boolean {
         val db = this.readableDatabase
         val cursor = db.rawQuery("SELECT * FROM $TABLE_NAME WHERE EMAIL = ? AND PASSWORD = ?", arrayOf(email, password))
-        return cursor.count > 0
+        val exists = cursor.count > 0
+        cursor.close()  // Close the cursor
+        db.close()  // Close the database connection
+        return exists
+    }
+
+
+    fun getUser(email: String, password: String): Long {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT ID FROM $TABLE_NAME WHERE EMAIL = ? AND PASSWORD = ? LIMIT  1", arrayOf(email, password))
+        var exists = -1L  // Initialize with a default value
+
+        if (cursor.moveToFirst()) {
+            // Move to the first row (if available)
+            exists = cursor.getLong(0)  // Get the value at the first column (zero-based index)
+        }
+
+        cursor.close()  // Close the cursor
+        db.close()  // Close the database connection
+        return exists
     }
 
     fun insertDrawing(userId: Int,drawingName: String, drawingData: Any): Long {

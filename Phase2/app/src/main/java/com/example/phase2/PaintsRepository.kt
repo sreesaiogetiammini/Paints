@@ -2,7 +2,6 @@ package com.example.phase2
 
 import android.content.Context
 import androidx.annotation.WorkerThread
-import androidx.lifecycle.LiveData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,6 +40,14 @@ class PaintsRepository(
     suspend fun getPaintingNamesByUserId(userId: Long): List<String> {
         return withContext(Dispatchers.IO) {
             paintsDao.getDrawingNamesByUserId(userId)
+        }
+    }
+
+
+    @WorkerThread
+    suspend fun deletePaintingByDrawingName(drawingName: String, userId: Long): Int {
+        return withContext(Dispatchers.IO) {
+            paintsDao.deletePaintingByDrawingName(drawingName,userId)
         }
     }
 }
