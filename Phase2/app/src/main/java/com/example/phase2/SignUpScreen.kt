@@ -1,6 +1,6 @@
 package com.example.phase2
 
-import android.util.Log
+import android.util.Patterns
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,15 +37,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 
-
 @Composable
-fun LoginScreen(navController: NavController, databaseHelper: DatabaseHelper) {
+fun SignUpScreen(navController: NavController, databaseHelper: DatabaseHelper) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
     val isError by remember { derivedStateOf { snackbarMessage != null } }
     val errorColor: Color by animateColorAsState(if (isError) Color.Red else Color.Transparent)
-//    val errorColor: Color by animateColorAsState(if (isError) Color.Red else Color.Transparent)
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -62,43 +61,57 @@ fun LoginScreen(navController: NavController, databaseHelper: DatabaseHelper) {
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.primaryContainer)  // Color.Purple
+                    .height(200.dp)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
             )
-            Spacer(modifier = Modifier.height(16.dp))  // Added spacer for some space between image and text
-            Text(text = "Welcome to Paints")
-            OutlinedTextField(value = email, onValueChange = { email = it.trim()}, label = { Text("Email") })
+            Text(text = "Sign Up Page")
+            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") })
             Spacer(modifier = Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it.trim() },
+                onValueChange = { password = it },
                 label = { Text("Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                label = { Text("Confirm Password") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
-                if(email.isEmpty() || password.isEmpty()) {
-                    snackbarMessage = "Email and Password cannot be empty."
-                }
-                else if (databaseHelper.checkUser(email, password)) {
-                    // Valid credentials, navigate to UserScreen
-                    val userID = databaseHelper.getUser(email, password)
-                    Log.e("ID",userID.toString())
-                    snackbarMessage = "Excited for your new Masterpiece"
-                    navController.navigate(Screen.UserScreen.route+"/$userID" )
-                } else {
-                    // Handle invalid credentials
-                    snackbarMessage = "The email address or Password that you've entered doesn't match any account. Sign up for an account."
+                when {
+                    email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() -> {
+                        snackbarMessage = "All fields are required."
+                    }
+                    !isValidEmail(email) -> {
+                        snackbarMessage = "Invalid email address."
+                    }
+                    password.length < 6 -> {
+                        snackbarMessage = "Password must be at least 6 characters."
+                    }
+                    password != confirmPassword -> {
+                        snackbarMessage = "Passwords do not match."
+                    }
+                    else -> {
+                        if (databaseHelper.insertData(email, password)) {
+                            // Successfully registered, navigate back to LoginScreen
+                            navController.navigate(Screen.LoginScreen.route) {
+                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                            }
+                        } else {
+                            // Handle registration failure
+                            snackbarMessage = "Registration failed. Email might be taken."
+                        }
+                    }
                 }
             }) {
-                Text("Login")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = {
-                // Navigate to SignUpScreen for user registration
-                navController.navigate(Screen.SignUpScreen.route)
-            }) {
-                Text("Signup")
+                Text("Sign Up")
             }
 
             if (isError) {
@@ -115,10 +128,14 @@ fun LoginScreen(navController: NavController, databaseHelper: DatabaseHelper) {
     }
 }
 
+fun isValidEmail(email: String): Boolean {
+    return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}
+
 @Preview(showBackground = true)
 @Composable
-fun LoginScreenPreview() {
+fun SignUpScreenPreview() {
     val navController = rememberNavController()
-    val databaseHelper = DatabaseHelper(LocalContext.current)  // Note: This won't work in preview
-    LoginScreen(navController = navController, databaseHelper = databaseHelper)
+    val databaseHelper = DatabaseHelper(LocalContext.current) // Note: This won't work in preview
+    SignUpScreen(navController = navController, databaseHelper = databaseHelper)
 }
