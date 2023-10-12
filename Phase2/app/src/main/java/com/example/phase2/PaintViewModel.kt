@@ -1,8 +1,5 @@
 package com.example.phase2
 
-
-
-import android.graphics.Paint
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
@@ -22,7 +19,7 @@ class PaintViewModel: ViewModel(){
     private val _lineColor = mutableStateOf(Color.Black)
     var lineColor = _lineColor
 
-    private val _lineStroke = mutableStateOf(Stroke(10f))
+    private val _lineStroke = mutableStateOf(Stroke(10f , cap = StrokeCap.Round))
     val lineStroke = _lineStroke
 
     fun addLine(line: Line) {
@@ -46,18 +43,15 @@ class PaintViewModel: ViewModel(){
         _lineStroke.value = newStroke
     }
 
-    fun updatePathStrokeCap(strokeCap: StrokeCap) {
+    fun updateLineStrokeCap(strokeCap: StrokeCap) {
         val updatedStroke = Stroke(cap = strokeCap, width = lineStroke.value.width)
         lineStroke.value = updatedStroke
     }
 
-    fun updatePathStrokeWidth(strokeWidth:  Float) {
+    fun updateLineStrokeWidth(strokeWidth:  Float) {
         val updatedStroke = Stroke(width = strokeWidth,cap = lineStroke.value.cap)
         lineStroke.value = updatedStroke
     }
 
-
-
 }
-
 
