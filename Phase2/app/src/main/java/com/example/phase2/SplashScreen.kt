@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,7 +28,7 @@ import androidx.navigation.compose.rememberNavController
 @Composable
 fun SplashScreen(navController: NavController) {
     Column (
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().clickable{ navController.navigate(Screen.LoginScreen.route) },
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
 
@@ -42,8 +41,7 @@ fun SplashScreen(navController: NavController) {
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { navController.navigate(Screen.LoginScreen.route)
-                .background(MaterialTheme.colorScheme.primaryContainer), // Color.Purple
+                .background(MaterialTheme.colorScheme.primaryContainer) // Color.Purple
         )
         Text(
             text = "Splash Page",
@@ -64,16 +62,16 @@ fun SplashScreen(navController: NavController) {
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
             )
-            
-            Button(onClick = { navController.navigate(Screen.LoginScreen.route) }) {
-                Text("How you doin'?")
-            }
+
+            Text("How you doin'?")
         }
 
 
     }
 
 }
+
+
 
 @Preview(showBackground = true)
 @Composable
