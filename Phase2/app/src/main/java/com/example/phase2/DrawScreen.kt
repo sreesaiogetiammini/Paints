@@ -1,6 +1,5 @@
 package com.example.phase2
 
-import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -258,9 +257,6 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             val lines = viewModel.getLines()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
                             val userId = id // Replace with the actual user ID
-//                            val drawingName = "painting1"
-                                Log.e("Send Id",id)
-                                Log.e("Send Name",paintingName)
                             if(paintingName.isNotBlank()) {
                                 val paintsData = PaintsData(
                                     userId = userId.toLong(),
