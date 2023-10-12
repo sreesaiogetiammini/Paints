@@ -3,6 +3,7 @@ package com.example.phase2
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -41,6 +42,7 @@ fun SplashScreen(navController: NavController) {
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable { navController.navigate(Screen.LoginScreen.route)
                 .background(MaterialTheme.colorScheme.primaryContainer), // Color.Purple
         )
         Text(
