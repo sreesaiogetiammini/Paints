@@ -1,7 +1,6 @@
 package com.example.phase2
 
 import android.content.Context
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Insert
@@ -9,7 +8,6 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Update
-import java.util.concurrent.Flow
 
 @Database(
     entities = [PaintsData :: class],
@@ -47,6 +45,9 @@ interface PaintsDao {
 
     @Query("SELECT * FROM paints WHERE drawingName = :drawingName AND userId = :userId LIMIT 1")
     suspend fun getDrawingByDrawingName(drawingName: String, userId: Long): PaintsData?
+
+    @Query("DELETE FROM paints WHERE drawingName = :drawingName AND userId = :userId")
+    suspend fun deletePaintingByDrawingName(drawingName: String, userId: Long): Int
 
     @Update
     suspend fun updatePaintsData(paintsData: PaintsData)
