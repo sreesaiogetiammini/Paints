@@ -2,7 +2,6 @@ package com.example.phase2
 
 import android.content.Context
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,11 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.phase2.ui.theme.Phase2Theme
 
 class MainActivity : ComponentActivity() {
@@ -38,7 +35,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Navigation(context: Context) {
     val navController = rememberNavController()
-//    val context = LocalContext.current
     val databaseHelper = DatabaseHelper(context)
     val application = PaintsApplication(context)
 

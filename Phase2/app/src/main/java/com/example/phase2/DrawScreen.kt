@@ -307,7 +307,7 @@ fun topBarStuff(navController: NavController,userId:String){
     ) {
         Image(
             painter = painterResource(id = R.drawable.paints),
-            contentDescription = null,
+            contentDescription = "P.a.i.n.t.s image",
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
@@ -422,7 +422,7 @@ fun AnimatedIconButton(
     ) {
         Image(
             painter = icon,
-            contentDescription = null,
+            contentDescription = "AnimatedIconButtons",
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -458,7 +458,7 @@ fun addSliderDialog(myViewModel:PaintViewModel, onDialogDismiss: () -> Unit, sli
                 )
                 Slider(
                     modifier = Modifier.semantics {
-                        contentDescription = "Localized Description"
+                        contentDescription = "Width Slider"
                     },
                     value = sliderPosition,
                     onValueChange = { sliderPosition = it },
