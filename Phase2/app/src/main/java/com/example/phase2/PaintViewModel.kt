@@ -53,5 +53,5 @@ class PaintViewModel: ViewModel(){
         lineStroke.value = updatedStroke
     }
 
-
 }
+

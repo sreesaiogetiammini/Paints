@@ -66,12 +66,15 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation ("androidx.ui:ui-test:1.2.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$version")
 
     debugImplementation("androidx.compose.ui:ui-test-manifest:$rootProject.composeVersion")
+
     val nav_version = "2.7.4"
 
 
