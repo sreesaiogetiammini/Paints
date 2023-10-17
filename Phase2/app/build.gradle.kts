@@ -71,7 +71,9 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$version")
 
+    debugImplementation("androidx.compose.ui:ui-test-manifest:$rootProject.composeVersion")
 
     val nav_version = "2.7.4"
 
@@ -107,5 +109,5 @@ dependencies {
     testImplementation ("androidx.test:rules:1.5.0")
 
     implementation ("com.github.skydoves:colorpicker-compose:1.0.5")
-
+    androidTestImplementation("org.mockito:mockito-core:3.12.4")
 }

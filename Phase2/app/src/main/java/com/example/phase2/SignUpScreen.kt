@@ -61,7 +61,6 @@ fun SignUpScreen(navController: NavController, databaseHelper: DatabaseHelper) {
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
                     .background(MaterialTheme.colorScheme.primaryContainer)
             )
             Text(text = "Sign Up Page")

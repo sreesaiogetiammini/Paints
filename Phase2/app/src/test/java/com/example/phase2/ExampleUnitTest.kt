@@ -1,16 +1,13 @@
 package com.example.phase2
 
 
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import org.junit.Test
-
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Before
-import org.junit.Rule
+import org.junit.Test
 
 
 
@@ -74,14 +71,14 @@ class ExampleUnitTest {
 
     @Test
     fun updatePathStrokeCap_changesStrokeCap() {
-        viewModel.updatePathStrokeCap(StrokeCap.Square)
+        viewModel.updateLineStrokeCap(StrokeCap.Square)
         assertEquals(StrokeCap.Square, viewModel.lineStroke.value.cap)
     }
 
     @Test
     fun updatePathStrokeWidth_changesStrokeWidth() {
         val newStrokeWidth = 8f
-        viewModel.updatePathStrokeWidth(newStrokeWidth)
+        viewModel.updateLineStrokeWidth(newStrokeWidth)
         assertEquals(newStrokeWidth, viewModel.lineStroke.value.width)
     }
 
