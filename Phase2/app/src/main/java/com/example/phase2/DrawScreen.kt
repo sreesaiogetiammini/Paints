@@ -256,6 +256,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                         scope.launch {
                             val lines = viewModel.getLines()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
+
                             val userId = id // Replace with the actual user ID
                             if(paintingName.isNotBlank()) {
                                 val paintsData = PaintsData(
