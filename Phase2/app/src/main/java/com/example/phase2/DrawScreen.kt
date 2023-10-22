@@ -371,6 +371,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
             }
             val textList = myviewModel.getTexts().toMutableList()
+
             for (index in textList.indices) {
                 var offsetX by remember { mutableStateOf(0f) }
                 var offsetY by remember { mutableStateOf(0f) }
@@ -385,7 +386,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                     },
                     modifier = Modifier
                         .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                        .size(200.dp,50.dp)
+                        .size(200.dp)
                         .pointerInput(Unit) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
