@@ -1,7 +1,9 @@
 package com.example.phase2
 
+import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -9,12 +11,7 @@ import androidx.lifecycle.ViewModel
 
 class PaintViewModel: ViewModel(){
 
-
-    private val _pathColor = mutableStateOf(Color.Black)
-    val pathColor = _pathColor
-
-
-
+    val gravityOffset = mutableStateOf(Offset(0f, 0f))
     private val lines = mutableStateListOf<Line>()
     private val _lineColor = mutableStateOf(Color.Black)
     var lineColor = _lineColor
@@ -22,6 +19,8 @@ class PaintViewModel: ViewModel(){
     private val _lineStroke = mutableStateOf(Stroke(10f , cap = StrokeCap.Round))
     val lineStroke = _lineStroke
 
+    private val images = mutableStateListOf<Uri>()
+    private val texts = mutableStateListOf<String>()
     fun addLine(line: Line) {
         lines.add(line)
     }
@@ -31,6 +30,26 @@ class PaintViewModel: ViewModel(){
     }
     fun getLines(): List<Line> {
         return lines
+    }
+
+    fun addImage(image: Uri) {
+        images.add(image)
+    }
+
+    fun getImages(): List<Uri> {
+        return images
+    }
+
+
+    fun addTexts(text: String) {
+        texts.add(text)
+    }
+
+    fun clearTexts() {
+        texts.clear()
+    }
+    fun getTexts(): List<String> {
+        return texts
     }
 
 
@@ -51,6 +70,11 @@ class PaintViewModel: ViewModel(){
     fun updateLineStrokeWidth(strokeWidth:  Float) {
         val updatedStroke = Stroke(width = strokeWidth,cap = lineStroke.value.cap)
         lineStroke.value = updatedStroke
+    }
+
+
+    fun getLineColor() : Color {
+       return lineColor.value
     }
 
 }
