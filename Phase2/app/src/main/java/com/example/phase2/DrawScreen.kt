@@ -320,8 +320,10 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             val uris = myviewModel.getImages()
                             val texts = myviewModel.getTexts()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
+
                             val drawingImages = Gson().toJson(uris)
                             val drawingTexts= Gson().toJson(texts)
+
                             val userId = id // Replace with the actual user ID
                             if (paintingName.isNotBlank()) {
                                 val paintsData = PaintsData(

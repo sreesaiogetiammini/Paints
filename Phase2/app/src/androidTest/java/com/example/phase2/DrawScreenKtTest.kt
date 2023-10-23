@@ -1,6 +1,7 @@
 package com.example.phase2
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsProperties.ContentDescription
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -72,5 +74,7 @@ class DrawScreenKtTest{
         composeTestRule.onNodeWithContentDescription("Round Cap").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("P.a.i.n.t.s image").performClick()
     }
+
+
 }
 
