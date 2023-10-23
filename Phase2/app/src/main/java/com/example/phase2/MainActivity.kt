@@ -1,6 +1,7 @@
 package com.example.phase2
 
 import android.content.Context
+import android.hardware.SensorManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,8 +16,11 @@ import androidx.navigation.compose.rememberNavController
 import com.example.phase2.ui.theme.Phase2Theme
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var sensorManager: SensorManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         setContent {
             Phase2Theme {
                 // A surface container using the 'background' color from the theme
@@ -25,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 )
                 {
-                    Navigation(context = applicationContext);
+                    Navigation(context = applicationContext,sensorManager);
                 }
             }
         }
@@ -33,7 +37,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Navigation(context: Context) {
+fun Navigation(context: Context,sensorManager: SensorManager) {
     val navController = rememberNavController()
     val databaseHelper = DatabaseHelper(context)
     val application = PaintsApplication(context)
@@ -72,10 +76,14 @@ fun Navigation(context: Context) {
             var drawingName = it.arguments?.getString("drawingName")
             var id = it.arguments?.getString("userId")
             if (drawingName != null && drawingName != "dummy") {
-                DrawScreen(navController = navController, paintsRepository = application.paintsRepository, drawingName = drawingName, userId = id.toString())
+                DrawScreen(navController = navController, paintsRepository = application.paintsRepository, drawingName = drawingName, userId = id.toString(),
+                    sensorManager = sensorManager
+                )
             } else {
                 drawingName = "dummy"
-                DrawScreen(navController = navController, paintsRepository = application.paintsRepository, drawingName = drawingName, userId = id.toString())
+                DrawScreen(navController = navController, paintsRepository = application.paintsRepository, drawingName = drawingName, userId = id.toString(),
+                    sensorManager = sensorManager
+                )
             }
         }
 

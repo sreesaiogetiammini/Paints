@@ -7,8 +7,13 @@ import androidx.room.PrimaryKey
 data class PaintsData(
     var drawingName: String,
     var drawingData: String,
-    var userId: Long,
+
+    var drawingImages: String,
+    var drawingTexts: String,
+    var userId: Long
+
 //    var misc: String, // Store image sources and coordinates
+
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0 // Primary key for the DB
