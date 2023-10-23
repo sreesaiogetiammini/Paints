@@ -130,7 +130,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
             }
         }
     )
-
+    var textList by remember { mutableStateOf(emptyList<String>()) }
 
 
 
@@ -270,8 +270,16 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             )
                             if (drawingData != null) {
                                 lines = deserializeDrawingData(drawingData.drawingData)
+                                imageUris = myviewModel.getImages().toMutableList()
+                                textList = deserializeDrawingTexts(drawingData.drawingTexts)
                                 for (line in lines) {
                                     myviewModel.addLine(line)
+                                }
+                                for(uri in imageUris){
+                                    myviewModel.addImage(uri)
+                                }
+                                for(text in textList){
+                                    myviewModel.addTexts(text)
                                 }
                             }
                         }
@@ -309,13 +317,19 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                     onSave = {
                         scope.launch {
                             val lines = myviewModel.getLines()
+                            val uris = myviewModel.getImages()
+                            val texts = myviewModel.getTexts()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
+                            val drawingImages = Gson().toJson(uris)
+                            val drawingTexts= Gson().toJson(texts)
                             val userId = id // Replace with the actual user ID
                             if (paintingName.isNotBlank()) {
                                 val paintsData = PaintsData(
                                     userId = userId.toLong(),
                                     drawingName = paintingName,
-                                    drawingData = drawingData
+                                    drawingData = drawingData,
+                                    drawingImages = drawingImages,
+                                    drawingTexts = drawingTexts,
                                 )
 
                                 val existingDrawingData =
@@ -327,6 +341,8 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                 if (existingDrawingData != null) {
                                     // Update the existing painting
                                     existingDrawingData.drawingData = drawingData
+                                    existingDrawingData.drawingImages = drawingImages
+                                    existingDrawingData.drawingTexts = drawingTexts
                                     paintsRepository.updatePaintsData(existingDrawingData)
 
                                     // need to add update paints data.
@@ -350,51 +366,13 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
 
             myviewModel.getImages().forEach { uri ->
-                var offsetX by remember { mutableStateOf(0f) }
-                var offsetY by remember { mutableStateOf(0f) }
-                AsyncImage(
-                    model = uri,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                        .size(200.dp)
-                        .pointerInput(Unit) {
-
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                offsetX += dragAmount.x
-                                offsetY += dragAmount.y
-                            }
-                        },
-                )
+               addImage(uri = uri, myviewModel = myviewModel)
 
             }
-            val textList = myviewModel.getTexts().toMutableList()
+            textList = myviewModel.getTexts()
 
-            for (index in textList.indices) {
-                var offsetX by remember { mutableStateOf(0f) }
-                var offsetY by remember { mutableStateOf(0f) }
-
-                val textValue = remember { mutableStateOf(textList[index]) }
-
-                TextField(
-                    value = textValue.value,
-                    onValueChange = {
-                        textValue.value = it
-                        textList[index] = it
-                    },
-                    modifier = Modifier
-                        .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                        .size(200.dp)
-                        .pointerInput(Unit) {
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                offsetX += dragAmount.x
-                                offsetY += dragAmount.y
-                            }
-                        }
-                )
+            for (text in textList) {
+                addTextField( myviewModel, text)
             }
 
         }
@@ -403,6 +381,84 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 }
 
 
+@Composable
+fun  addImage(uri: Uri,myviewModel: PaintViewModel){
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(0f) }
+
+    Box(
+        modifier = Modifier
+            .size(200.dp)
+            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    offsetX += dragAmount.x
+                    offsetY += dragAmount.y
+                }
+            }
+    ) {
+        AsyncImage(
+            model = uri,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        IconButton(
+            onClick = {
+                myviewModel.removeImage(uri)
+            },
+            modifier = Modifier
+                .padding(4.dp) // Adjust the padding as needed
+                .align(Alignment.TopEnd) // Position the close button in the top-right corner
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close Image"
+            )
+        }
+    }
+
+}
+
+@Composable
+fun  addTextField(myviewModel: PaintViewModel,text : String){
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(0f) }
+    var textValue by remember { mutableStateOf(text) }
+    Box(
+        modifier = Modifier
+            .size(200.dp)
+            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    offsetX += dragAmount.x
+                    offsetY += dragAmount.y
+                }
+            }
+    ) {
+
+        TextField(value = textValue, onValueChange = {
+            textValue = it
+        })
+        IconButton(
+            onClick = {
+                myviewModel.removeTexts(text)
+            },
+            modifier = Modifier
+                .padding(4.dp) // Adjust the padding as needed
+                .align(Alignment.TopEnd) // Position the close button in the top-right corner
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close Image"
+            )
+        }
+    }
+
+}
 
 
 
@@ -436,8 +492,6 @@ fun MarbleRollingApp(marbleViewModel: PaintViewModel, sensorManager: SensorManag
 fun updateGravityData(sensorManager: SensorManager, marbleViewModel: PaintViewModel, dampingFactor: Float): Flow<Offset> {
 
     return channelFlow {
-
-        val alpha: Float = 0.8f
         val gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
         var currentOffset = Offset(10f, 10f)
         val sensorListener = object : SensorEventListener {
@@ -624,7 +678,11 @@ fun SaveDrawingDialog(
 
 
 
-
+fun deserializeDrawingTexts(drawingTexts: String?): List<String> {
+    val gson = Gson()
+    val listType = object : TypeToken<List<String>>() {}.type
+    return gson.fromJson(drawingTexts, listType)
+}
 
 fun deserializeDrawingData(drawingData: String?): List<Line> {
     val gson = Gson()
@@ -632,6 +690,11 @@ fun deserializeDrawingData(drawingData: String?): List<Line> {
     return gson.fromJson(drawingData, listType)
 }
 
+fun deserializeDrawingImages(drawingData: String?): MutableList<Uri> {
+    val gson = Gson()
+    val uriType = object : TypeToken<MutableList<Uri>>() {}.type
+    return gson.fromJson(drawingData, uriType) ?: mutableListOf()
+}
 @Composable
 fun AnimatedIconButton(
     icon: Painter,
