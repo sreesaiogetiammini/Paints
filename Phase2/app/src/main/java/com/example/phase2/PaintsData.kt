@@ -7,6 +7,8 @@ import androidx.room.PrimaryKey
 data class PaintsData(
     var drawingName: String,
     var drawingData: String,
+    var drawingImages: String,
+    var drawingTexts: String,
     var userId: Long
 ) {
     @PrimaryKey(autoGenerate = true)

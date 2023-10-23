@@ -36,6 +36,10 @@ class PaintViewModel: ViewModel(){
         images.add(image)
     }
 
+    fun removeImage(image: Uri) {
+        images.remove(image)
+    }
+
     fun getImages(): List<Uri> {
         return images
     }
@@ -43,6 +47,10 @@ class PaintViewModel: ViewModel(){
 
     fun addTexts(text: String) {
         texts.add(text)
+    }
+
+    fun removeTexts(text: String) {
+        texts.remove(text)
     }
 
     fun clearTexts() {
