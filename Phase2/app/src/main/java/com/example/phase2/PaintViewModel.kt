@@ -1,14 +1,20 @@
 package com.example.phase2
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
-
 class PaintViewModel: ViewModel(){
 
     val gravityOffset = mutableStateOf(Offset(0f, 0f))
@@ -104,6 +110,64 @@ class PaintViewModel: ViewModel(){
         text.value = newValue
 
     }
+
+
+    fun captureCanvasAsBitmap(canvasWidth: Int,canvasHeight:Int,context:Context): Bitmap {
+
+        // Create a blank Bitmap with the specified dimensions
+        val canvasBitmap = Bitmap.createBitmap(canvasWidth, canvasHeight, Bitmap.Config.ARGB_8888)
+
+        // Create a Canvas to draw on the Bitmap
+        val canvas = Canvas(canvasBitmap)
+
+        // Clear the canvas with a white background
+        canvas.drawColor(Color.White.toArgb())
+
+        // Draw lines, images, and texts
+        for (line in lines) {
+            val paint = Paint()
+            paint.color = line.color.toArgb()
+            paint.strokeWidth = line.strokeWidth.width
+            canvas.drawLine(line.start.x, line.start.y, line.end.x, line.end.y, paint)
+        }
+        for (image in images) {
+            // Draw images as needed
+            val imageUri = image.src
+            val imageX = image.x
+            val imageY = image.y
+
+            val desiredWidth = 200 // Desired width in pixels
+            val desiredHeight = 200 // Desired height in pixels
+
+            try {
+                val imageStream = context.contentResolver.openInputStream(imageUri)
+                val originalBitmap = BitmapFactory.decodeStream(imageStream)
+
+                // Scale the original bitmap to the desired width and height
+                val scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, desiredWidth, desiredHeight, false)
+
+                canvas.drawBitmap(scaledBitmap, imageX, imageY, null)
+            }
+            catch (e: Exception) {
+                Log.e("Image Draw Exception",e.toString())
+            }
+        }
+        for (text in texts) {
+            // Draw text from TextBox objects
+            val textPaint = Paint()
+            textPaint.color = Color.Black.toArgb() // Set text color
+            textPaint.textSize = 20f // Set text size
+
+            // Draw text on the canvas at the specified x and y coordinates
+            canvas.drawText(text.value, text.x, text.y, textPaint)
+        }
+
+        return canvasBitmap
+    }
+
+
+
+
 
 }
 
