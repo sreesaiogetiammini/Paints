@@ -7,8 +7,8 @@ import androidx.room.PrimaryKey
 data class PaintsData(
     var drawingName: String,
     var drawingData: String,
-
     var drawingImages: String,
+    // need to convert the list of ImageData to string and store here
     var drawingTexts: String,
     var userId: Long
 

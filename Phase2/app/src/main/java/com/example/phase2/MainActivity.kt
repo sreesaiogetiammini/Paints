@@ -1,5 +1,6 @@
 package com.example.phase2
 
+import ImageDataTypeAdapter
 import android.content.Context
 import android.hardware.SensorManager
 import android.os.Bundle
@@ -14,6 +15,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.phase2.ui.theme.Phase2Theme
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 
 class MainActivity : ComponentActivity() {
 
@@ -21,6 +24,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
+
+        // val gson: Gson = GsonBuilder()
+        //            .registerTypeAdapter(ImageData::class.java, ImageDataSerializer())
+        //            .create()
         setContent {
             Phase2Theme {
                 // A surface container using the 'background' color from the theme

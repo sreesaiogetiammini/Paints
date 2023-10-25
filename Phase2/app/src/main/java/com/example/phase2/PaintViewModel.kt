@@ -19,7 +19,7 @@ class PaintViewModel: ViewModel(){
     private val _lineStroke = mutableStateOf(Stroke(10f , cap = StrokeCap.Round))
     val lineStroke = _lineStroke
 
-    private val images = mutableStateListOf<Uri>()
+    private val images = mutableStateListOf<ImageData>()
     private val texts = mutableStateListOf<String>()
     fun addLine(line: Line) {
         lines.add(line)
@@ -32,15 +32,15 @@ class PaintViewModel: ViewModel(){
         return lines
     }
 
-    fun addImage(image: Uri) {
+    fun addImage(image: ImageData) {
         images.add(image)
     }
 
-    fun removeImage(image: Uri) {
+    fun removeImage(image: ImageData) {
         images.remove(image)
     }
 
-    fun getImages(): List<Uri> {
+    fun getImages(): List<ImageData> {
         return images
     }
 
@@ -83,6 +83,14 @@ class PaintViewModel: ViewModel(){
 
     fun getLineColor() : Color {
        return lineColor.value
+    }
+
+    fun updateImageDataBySrc(src: Uri, updatedImageData: ImageData) {
+        val imageIndex = images.indexOfFirst { it.src == src }
+        if (imageIndex != -1) {
+            // Image with the given src found, update it
+            images[imageIndex] = updatedImageData
+        }
     }
 
 }
