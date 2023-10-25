@@ -311,7 +311,11 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
         )
         {
 
-            MarbleRollingApp(myviewModel,sensorManager)
+            // Jin Work on this
+//            if(aiPaintingEnabled){
+//                MarbleRollingApp(myviewModel,sensorManager)
+//            }
+
             if (drawingName.isNotBlank() && drawingName != "dummy") {
                 LaunchedEffect(Unit) {
                     val drawingData = paintsRepository.getDrawingByDrawingName(
@@ -439,13 +443,13 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
 
 suspend fun takeScreenshot(myViewModel: PaintViewModel,activity: ComponentActivity?, context: Context) {
-   // if (activity == null) return
+    if (activity == null) return
 
 //    val view = activity.window.decorView
 //    val screenshot = withContext(Dispatchers.IO) {
 //        view.drawToBitmap()
 //    }
-
+//
     val deviceWidth = Resources.getSystem().displayMetrics.widthPixels
     val deviceHeight = Resources.getSystem().displayMetrics.heightPixels
 
