@@ -10,3 +10,9 @@ data class Line(
     val color: Color = Color.Black,
     val strokeWidth: Stroke = Stroke(10f),
 )
+
+data class TextBox(
+    var x: Float,
+    var y: Float,
+    var value:String,
+)

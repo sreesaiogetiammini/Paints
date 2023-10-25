@@ -1,9 +1,11 @@
 package com.example.phase2
 
+import ImageDataTypeAdapter
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.media.Image
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -85,7 +87,11 @@ import com.github.skydoves.colorpicker.compose.ColorEnvelope
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.TypeAdapter
 import com.google.gson.reflect.TypeToken
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonWriter
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -116,21 +122,27 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
         painterResource(R.drawable.baseline_fiber_new_24),
         painterResource(R.drawable.baseline_text_fields_24),
         painterResource(R.drawable.baseline_image_24)
-
-
     )
+    val gson: Gson = GsonBuilder()
+        .registerTypeAdapter(ImageData::class.java, ImageDataTypeAdapter())
+        .create()
     var isCapDialogOpen by remember { mutableStateOf(false) }
+    var imagesData by remember { mutableStateOf(mutableListOf<ImageData>()) }
     var imageUris by remember { mutableStateOf(mutableListOf<Uri>()) }
     val PhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
         onResult = {uris ->
             imageUris = uris.toMutableList()
             imageUris.forEach{uri ->
-                myviewModel.addImage(uri)
+                Log.e("uri", uri.toString())
+                myviewModel.addImage(ImageData(uri, 0f,0f))
+                for (image in myviewModel.getImages()){
+                    Log.e("132", image.src.toString())
+                }
             }
         }
     )
-    var textList by remember { mutableStateOf(emptyList<String>()) }
+    var textList by remember { mutableStateOf(emptyList<TextBox>()) }
 
 
 
@@ -182,7 +194,8 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                         navController.navigate(Screen.DrawScreen.route + "/$userId" +"/dummy")
                                     }
                                     if(i == 6){
-                                        myviewModel.addTexts("Add Text")
+                                        val text = TextBox(0f,0f,"Add Text")
+                                        myviewModel.addTexts(text)
                                     }
                                     if(i == 7){
                                         PhotoPickerLauncher.launch(
@@ -270,13 +283,13 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             )
                             if (drawingData != null) {
                                 lines = deserializeDrawingData(drawingData.drawingData)
-                                imageUris = myviewModel.getImages().toMutableList()
+                                imagesData = deserializeDrawingImages(drawingData.drawingImages)
                                 textList = deserializeDrawingTexts(drawingData.drawingTexts)
                                 for (line in lines) {
                                     myviewModel.addLine(line)
                                 }
-                                for(uri in imageUris){
-                                    myviewModel.addImage(uri)
+                                for(image in imagesData){
+                                    myviewModel.addImage(image)
                                 }
                                 for(text in textList){
                                     myviewModel.addTexts(text)
@@ -295,6 +308,8 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             color = lineColor.value,
                             strokeWidth = lineStroke.value,
                         )
+
+
                         lines =
                             lines + line_custom // Append the new line to the list of lines
                         myviewModel.addLine(line = line_custom)
@@ -317,11 +332,11 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                     onSave = {
                         scope.launch {
                             val lines = myviewModel.getLines()
-                            val uris = myviewModel.getImages()
+                            val images = myviewModel.getImages()
                             val texts = myviewModel.getTexts()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
-
-                            val drawingImages = Gson().toJson(uris)
+                            val drawingImages = gson.toJson(images)
+                            Log.e("drawing Data", drawingImages)
                             val drawingTexts= Gson().toJson(texts)
 
                             val userId = id // Replace with the actual user ID
@@ -368,8 +383,10 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
 
             myviewModel.getImages().forEach { uri ->
-               addImage(uri = uri, myviewModel = myviewModel)
-
+                var imageData by remember {
+                    mutableStateOf(uri)
+                }
+               addImageToCanvas(imageData = imageData, myviewModel = myviewModel)
             }
             textList = myviewModel.getTexts()
 
@@ -384,24 +401,27 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
 
 @Composable
-fun  addImage(uri: Uri,myviewModel: PaintViewModel){
+fun addImageToCanvas(imageData: ImageData,myviewModel: PaintViewModel){
     var offsetX by remember { mutableStateOf(0f) }
     var offsetY by remember { mutableStateOf(0f) }
 
     Box(
         modifier = Modifier
             .size(200.dp)
-            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+            .offset { IntOffset((imageData.x + offsetX).roundToInt(), (imageData.y + offsetY).roundToInt()) }
             .pointerInput(Unit) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
                     offsetX += dragAmount.x
                     offsetY += dragAmount.y
+
+                    myviewModel.updateImageDataBySrc(imageData.src, ImageData(imageData.src, offsetX, offsetY))
+
                 }
             }
     ) {
         AsyncImage(
-            model = uri,
+            model = imageData.src,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -409,7 +429,7 @@ fun  addImage(uri: Uri,myviewModel: PaintViewModel){
 
         IconButton(
             onClick = {
-                myviewModel.removeImage(uri)
+                myviewModel.removeImage(imageData)
             },
             modifier = Modifier
                 .padding(4.dp) // Adjust the padding as needed
@@ -423,46 +443,6 @@ fun  addImage(uri: Uri,myviewModel: PaintViewModel){
     }
 
 }
-
-@Composable
-fun  addTextField(myviewModel: PaintViewModel,text : String){
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
-    var textValue by remember { mutableStateOf(text) }
-    Box(
-        modifier = Modifier
-            .size(200.dp)
-            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                    offsetX += dragAmount.x
-                    offsetY += dragAmount.y
-                }
-            }
-    ) {
-
-        TextField(value = textValue, onValueChange = {
-            textValue = it
-        })
-        IconButton(
-            onClick = {
-                myviewModel.removeTexts(text)
-            },
-            modifier = Modifier
-                .padding(4.dp) // Adjust the padding as needed
-                .align(Alignment.TopEnd) // Position the close button in the top-right corner
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Close Image"
-            )
-        }
-    }
-
-}
-
-
 
 @Composable
 fun MarbleRollingApp(marbleViewModel: PaintViewModel, sensorManager: SensorManager) {
@@ -489,6 +469,7 @@ fun MarbleRollingApp(marbleViewModel: PaintViewModel, sensorManager: SensorManag
         )
     }
 }
+
 
 
 fun updateGravityData(sensorManager: SensorManager, marbleViewModel: PaintViewModel, dampingFactor: Float): Flow<Offset> {
@@ -537,48 +518,50 @@ fun updateGravityData(sensorManager: SensorManager, marbleViewModel: PaintViewMo
     }
 }
 
-
-
-
 @Composable
-fun Marble(x: Float, y: Float, maxWidth: Int, maxHeight: Int, marbleViewModel: PaintViewModel ) {
-    val radius = 50.dp
-    val xMin = 0f
-    val xMax = (maxWidth - (radius.value * 4).toInt())
-    val yMin = 0f
-    val yMax = (maxHeight - (radius.value * 4).toInt())
+fun  addTextField(myviewModel: PaintViewModel,text : TextBox ){
 
-    val xPosition = x.coerceIn(xMin, xMax.toFloat())
-    val yPosition = y.coerceIn(yMin, yMax.toFloat())
+    var textValue by remember { mutableStateOf(text.value) }
+    var offsetX by remember { mutableStateOf(text.x) }
+    var offsetY by remember { mutableStateOf(text.y) }
 
     Box(
         modifier = Modifier
-            .offset { IntOffset(xPosition.roundToInt(), yPosition.roundToInt()) }
-            .size(radius)
-            .border(2.dp, Color.Black, shape = CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(radius)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            marbleViewModel.getLineColor(),
-                            marbleViewModel.getLineColor()
-                        ),
-                        center = Offset(xPosition, yPosition),
-                        radius = radius.value
-                    ),
-                    shape = CircleShape,
-                )
-                .graphicsLayer {
-                    translationX = xPosition
-                    translationY = yPosition
+            .size(200.dp)
+            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    offsetX += dragAmount.x
+                    offsetY += dragAmount.y
+                    myviewModel.updateTextCoordinates(text, offsetX, offsetY)
                 }
-        )
+            }
+    ) {
+
+        TextField(value = textValue, onValueChange = {
+            textValue = it
+            myviewModel.updateTextValue(text,textValue)
+        })
+        IconButton(
+            onClick = {
+                myviewModel.removeTexts(text)
+            },
+            modifier = Modifier
+                .padding(4.dp) // Adjust the padding as needed
+                .align(Alignment.TopEnd) // Position the close button in the top-right corner
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close Image"
+            )
+        }
     }
+
 }
+
+
+
 
 @Composable
 fun topBarStuff(navController: NavController,userId:String){
@@ -680,9 +663,9 @@ fun SaveDrawingDialog(
 
 
 
-fun deserializeDrawingTexts(drawingTexts: String?): List<String> {
+fun deserializeDrawingTexts(drawingTexts: String?): List<TextBox> {
     val gson = Gson()
-    val listType = object : TypeToken<List<String>>() {}.type
+    val listType = object : TypeToken<List<TextBox>>() {}.type
     return gson.fromJson(drawingTexts, listType)
 }
 
@@ -692,10 +675,12 @@ fun deserializeDrawingData(drawingData: String?): List<Line> {
     return gson.fromJson(drawingData, listType)
 }
 
-fun deserializeDrawingImages(drawingData: String?): MutableList<Uri> {
-    val gson = Gson()
-    val uriType = object : TypeToken<MutableList<Uri>>() {}.type
-    return gson.fromJson(drawingData, uriType) ?: mutableListOf()
+fun deserializeDrawingImages(imagesData: String?): MutableList<ImageData> {
+    val gson: Gson = GsonBuilder()
+        .registerTypeAdapter(ImageData::class.java, ImageDataTypeAdapter())
+        .create()
+    val imageDataType = object : TypeToken<MutableList<ImageData>>() {}.type
+    return gson.fromJson(imagesData, imageDataType) ?: mutableListOf()
 }
 @Composable
 fun AnimatedIconButton(
@@ -906,5 +891,46 @@ fun colorPicker(myViewModel: PaintViewModel){
             .height(35.dp)
             , controller = controller)
 
+    }
+}
+
+
+@Composable
+fun Marble(x: Float, y: Float, maxWidth: Int, maxHeight: Int, marbleViewModel: PaintViewModel ) {
+    val radius = 50.dp
+    val xMin = 0f
+    val xMax = (maxWidth - (radius.value * 4).toInt())
+    val yMin = 0f
+    val yMax = (maxHeight - (radius.value * 4).toInt())
+
+    val xPosition = x.coerceIn(xMin, xMax.toFloat())
+    val yPosition = y.coerceIn(yMin, yMax.toFloat())
+
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(xPosition.roundToInt(), yPosition.roundToInt()) }
+            .size(radius)
+            .border(2.dp, Color.Black, shape = CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(radius)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            marbleViewModel.getLineColor(),
+                            marbleViewModel.getLineColor()
+                        ),
+                        center = Offset(xPosition, yPosition),
+                        radius = radius.value
+                    ),
+                    shape = CircleShape,
+                )
+                .graphicsLayer {
+                    translationX = xPosition
+                    translationY = yPosition
+                }
+        )
     }
 }
