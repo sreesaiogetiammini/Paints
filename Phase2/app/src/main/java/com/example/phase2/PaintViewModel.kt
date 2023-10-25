@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModel
 class PaintViewModel: ViewModel(){
 
     val gravityOffset = mutableStateOf(Offset(0f, 0f))
+    val trailPositions = mutableStateListOf<Offset>() // For storing the marble trail
     private val lines = mutableStateListOf<Line>()
     private val _lineColor = mutableStateOf(Color.Black)
     var lineColor = _lineColor

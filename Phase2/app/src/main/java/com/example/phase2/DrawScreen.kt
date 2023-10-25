@@ -1,13 +1,16 @@
 package com.example.phase2
 
 import ImageDataTypeAdapter
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.media.Image
 import android.net.Uri
 import android.util.Log
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +29,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,7 +40,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -71,12 +77,16 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.FileProvider
+import androidx.core.view.drawToBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -88,19 +98,22 @@ import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.google.gson.TypeAdapter
 import com.google.gson.reflect.TypeToken
-import com.google.gson.stream.JsonReader
-import com.google.gson.stream.JsonWriter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.roundToInt
 
 @Composable
 fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository, userId: String,drawingName: String,sensorManager: SensorManager) {
-    var presses by remember { mutableStateOf(0) }
+    var expanded  by remember { mutableStateOf(false) }
     var sliderPosition by remember { mutableStateOf(10f) }
     var clickedBtn by remember { mutableStateOf(-1) }
     var isSliderDialogOpen by remember { mutableStateOf(false) }
@@ -143,12 +156,14 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
         }
     )
     var textList by remember { mutableStateOf(emptyList<TextBox>()) }
-
-
+    var screenshotTaken by remember { mutableStateOf(0) }
+    val context = LocalContext.current
+    val activity = (LocalView.current.context as? ComponentActivity)
+    val aiPaintingEnabled by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            topBarStuff(navController = navController, userId = id)
+            topBarStuff(navController = navController, userId = id , aiPaintingEnabled)
         },
         bottomBar = {
             BottomAppBar(
@@ -243,14 +258,37 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
             }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { presses++ }) {
-                Button(onClick = {
-                    isSaveDialogOpen = !isSaveDialogOpen
-                }) {
-                    Icon(
-                        painterResource(id = R.drawable.baseline_save_as_24),
-                        contentDescription = "Save As"
-                    )
+            Column{
+                FloatingActionButton(onClick = { expanded = !expanded }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                if(expanded){
+                    FloatingActionButton(onClick = {
+                        isSaveDialogOpen = !isSaveDialogOpen
+                    }) {
+                        Icon(
+                            painterResource(id = R.drawable.baseline_save_as_24),
+                            contentDescription = "Save As"
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    FloatingActionButton(onClick = {
+                        screenshotTaken++
+                    }) {
+                        Icon(
+                            painterResource(id = R.drawable.baseline_share_24),
+                            contentDescription = "Share"
+                        )
+                    }
+                    if(screenshotTaken>0){
+                        LaunchedEffect(Unit){
+                            takeScreenshot(activity, context)
+                        }
+                    }
+
                 }
             }
         }
@@ -274,28 +312,29 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
             .border(5.dp, Color.Blue, RectangleShape)
         )
         {
+
             MarbleRollingApp(myviewModel,sensorManager)
             if (drawingName.isNotBlank() && drawingName != "dummy") {
-                        LaunchedEffect(Unit) {
-                            val drawingData = paintsRepository.getDrawingByDrawingName(
-                                drawingName = paintingName,
-                                userId = id.toLong()
-                            )
-                            if (drawingData != null) {
-                                lines = deserializeDrawingData(drawingData.drawingData)
-                                imagesData = deserializeDrawingImages(drawingData.drawingImages)
-                                textList = deserializeDrawingTexts(drawingData.drawingTexts)
-                                for (line in lines) {
-                                    myviewModel.addLine(line)
-                                }
-                                for(image in imagesData){
-                                    myviewModel.addImage(image)
-                                }
-                                for(text in textList){
-                                    myviewModel.addTexts(text)
-                                }
-                            }
+                LaunchedEffect(Unit) {
+                    val drawingData = paintsRepository.getDrawingByDrawingName(
+                        drawingName = paintingName,
+                        userId = id.toLong()
+                    )
+                    if (drawingData != null) {
+                        lines = deserializeDrawingData(drawingData.drawingData)
+                        imagesData = deserializeDrawingImages(drawingData.drawingImages)
+                        textList = deserializeDrawingTexts(drawingData.drawingTexts)
+                        for (line in lines) {
+                            myviewModel.addLine(line)
                         }
+                        for(image in imagesData){
+                            myviewModel.addImage(image)
+                        }
+                        for(text in textList){
+                            myviewModel.addTexts(text)
+                        }
+                    }
+                }
             }
             Canvas(modifier = Modifier
                 .fillMaxSize()
@@ -386,7 +425,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                 var imageData by remember {
                     mutableStateOf(uri)
                 }
-               addImageToCanvas(imageData = imageData, myviewModel = myviewModel)
+                addImageToCanvas(imageData = imageData, myviewModel = myviewModel)
             }
             textList = myviewModel.getTexts()
 
@@ -398,6 +437,43 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
     }
 
 }
+
+suspend fun takeScreenshot(activity: ComponentActivity?, context: Context) {
+    if (activity == null) return
+
+    val view = activity.window.decorView
+    val screenshot = withContext(Dispatchers.IO) {
+        view.drawToBitmap()
+    }
+
+
+
+    // Save the screenshot to a file
+    val timestamp = SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(Date())
+    val fileName = "Screenshot_$timestamp.png"
+    val screenshotFile = File(context.filesDir, fileName)
+
+    val uri = FileProvider.getUriForFile(
+        context,
+        "com.example.phase2.fileprovider",
+        screenshotFile
+    )
+
+    val fos = context.contentResolver.openOutputStream(uri)
+    screenshot.compress(Bitmap.CompressFormat.PNG,100, fos!!)
+    fos!!.close()
+
+    val shareIntent: Intent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_STREAM, uri)
+        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        type = "image/png"
+    }
+
+    context.startActivity(Intent.createChooser(shareIntent, "Share Screenshot"))
+}
+
+
 
 
 @Composable
@@ -447,6 +523,7 @@ fun addImageToCanvas(imageData: ImageData,myviewModel: PaintViewModel){
 @Composable
 fun MarbleRollingApp(marbleViewModel: PaintViewModel, sensorManager: SensorManager) {
     val marbleOffset = marbleViewModel.gravityOffset.value
+    val trail = marbleViewModel.trailPositions
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize()
@@ -454,12 +531,22 @@ fun MarbleRollingApp(marbleViewModel: PaintViewModel, sensorManager: SensorManag
         val maxWidth = constraints.maxWidth
         val maxHeight = constraints.maxHeight
 
+        // Draw the trail
+        trail.forEach { position ->
+            Box(
+                modifier = Modifier.offset {
+                    IntOffset(position.x.roundToInt(), position.y.roundToInt())
+                }.size(10.dp).background(marbleViewModel.getLineColor())
+            )
+        }
+
         LaunchedEffect(sensorManager) {
-            val accelMagFlow = updateGravityData(sensorManager, marbleViewModel, dampingFactor = 2f)
+            val accelMagFlow = updateGravityData(sensorManager, marbleViewModel, dampingFactor = 2f, maxWidth = maxWidth, maxHeight = maxHeight)
             accelMagFlow.collect { offset ->
                 marbleViewModel.gravityOffset.value = offset
             }
         }
+
         Marble(
             x = marbleOffset.x,
             y = marbleOffset.y,
@@ -470,40 +557,43 @@ fun MarbleRollingApp(marbleViewModel: PaintViewModel, sensorManager: SensorManag
     }
 }
 
-
-
-fun updateGravityData(sensorManager: SensorManager, marbleViewModel: PaintViewModel, dampingFactor: Float): Flow<Offset> {
-
+fun updateGravityData(
+    sensorManager: SensorManager,
+    marbleViewModel: PaintViewModel,
+    dampingFactor: Float,
+    maxWidth: Int,
+    maxHeight: Int
+): Flow<Offset> {
     return channelFlow {
         val gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
-        var currentOffset = Offset(10f, 10f)
+        var currentOffset = marbleViewModel.gravityOffset.value
+        val radius = 50.dp.value
+        val xMin = 0f
+        val xMax = maxWidth - 2 * radius
+        val yMin = 0f
+        val yMax = maxHeight - 2 * radius
+
         val sensorListener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent) {
-                if (event !== null) {
-                    Log.i("Gravity Event Changes",event.values[0].toString())
-                    val gravityX =event.values[0]
-                    val gravityY = event.values[1]
+            override fun onSensorChanged(event: SensorEvent?) {
+                event?.let {
+                    val gravityX = it.values[0]
+                    val gravityY = it.values[1]
                     val deltaX = gravityX * dampingFactor
                     val deltaY = gravityY * dampingFactor
 
-                    currentOffset = Offset(
-                        currentOffset.x + deltaX,
-                        currentOffset.y + deltaY,
+                    val constrainedX = (currentOffset.x + deltaX).coerceIn(xMin, xMax)
+                    val constrainedY = (currentOffset.y + deltaY).coerceIn(yMin, yMax)
+                    currentOffset = Offset(constrainedX, constrainedY)
 
-                        )
                     marbleViewModel.gravityOffset.value = currentOffset
-                    Log.i("Current LogSet",currentOffset.x.toString())
-                    trySend(currentOffset).isSuccess
-                }
-                else{
-                    Log.e("Event Null" ,"Gge")
+                    marbleViewModel.trailPositions.add(currentOffset)
+                    trySend(currentOffset)
+                } ?: run {
+                    Log.e("Event Null", "Gge")
                 }
             }
 
-
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-
-            }
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
         }
 
         sensorManager.registerListener(
@@ -514,7 +604,6 @@ fun updateGravityData(sensorManager: SensorManager, marbleViewModel: PaintViewMo
         awaitClose {
             sensorManager.unregisterListener(sensorListener)
         }
-
     }
 }
 
@@ -564,7 +653,7 @@ fun  addTextField(myviewModel: PaintViewModel,text : TextBox ){
 
 
 @Composable
-fun topBarStuff(navController: NavController,userId:String){
+fun topBarStuff(navController: NavController, userId: String, aiPaintingEnabled: Boolean){
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -583,6 +672,18 @@ fun topBarStuff(navController: NavController,userId:String){
         )
         IconButton(
             onClick = {
+                aiPaintingEnabled != aiPaintingEnabled
+            },
+        ) {
+            Icon(
+                imageVector = Icons.Default.Face,
+                contentDescription = "AI Painter"
+            )
+        }
+
+
+        IconButton(
+            onClick = {
                 navController.navigate(Screen.SplashScreen.route)
 
             },
@@ -594,8 +695,8 @@ fun topBarStuff(navController: NavController,userId:String){
         }
         IconButton(
             onClick = {
-                    navController.navigate(Screen.UserScreen.route+"/$userId" )
-                      },
+                navController.navigate(Screen.UserScreen.route+"/$userId" )
+            },
         ) {
             Icon(
                 imageVector = Icons.Default.Home,
@@ -653,7 +754,7 @@ fun SaveDrawingDialog(
                     onDismiss()
                 },
 
-            ) {
+                ) {
                 Text("Cancel")
             }
         }
@@ -872,8 +973,8 @@ fun colorPicker(myViewModel: PaintViewModel){
             controller = controller,
             onColorChanged = {
                     colorEnvelope: ColorEnvelope ->
-                    val selectedLineColor = Color(colorEnvelope.color.toArgb())
-                    myViewModel.updateLineColor(selectedLineColor)
+                val selectedLineColor = Color(colorEnvelope.color.toArgb())
+                myViewModel.updateLineColor(selectedLineColor)
             }
         )
         AlphaSlider(modifier = Modifier
