@@ -3,6 +3,7 @@ package com.example.phase2
 import ImageDataTypeAdapter
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -86,7 +87,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
-import androidx.core.view.drawToBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -99,12 +99,10 @@ import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -285,7 +283,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                     }
                     if(screenshotTaken>0){
                         LaunchedEffect(Unit){
-                            takeScreenshot(activity, context)
+                            takeScreenshot(myviewModel,activity, context)
                         }
                     }
 
@@ -438,16 +436,20 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
 }
 
-suspend fun takeScreenshot(activity: ComponentActivity?, context: Context) {
-    if (activity == null) return
-
-    val view = activity.window.decorView
-    val screenshot = withContext(Dispatchers.IO) {
-        view.drawToBitmap()
-    }
 
 
+suspend fun takeScreenshot(myViewModel: PaintViewModel,activity: ComponentActivity?, context: Context) {
+   // if (activity == null) return
 
+//    val view = activity.window.decorView
+//    val screenshot = withContext(Dispatchers.IO) {
+//        view.drawToBitmap()
+//    }
+
+    val deviceWidth = Resources.getSystem().displayMetrics.widthPixels
+    val deviceHeight = Resources.getSystem().displayMetrics.heightPixels
+
+    val screenshot = myViewModel.captureCanvasAsBitmap(deviceWidth,deviceHeight, context = context)
     // Save the screenshot to a file
     val timestamp = SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(Date())
     val fileName = "Screenshot_$timestamp.png"
