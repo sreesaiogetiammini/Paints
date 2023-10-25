@@ -20,7 +20,7 @@ class PaintViewModel: ViewModel(){
     val lineStroke = _lineStroke
 
     private val images = mutableStateListOf<ImageData>()
-    private val texts = mutableStateListOf<String>()
+    private val texts = mutableStateListOf<TextBox>()
     fun addLine(line: Line) {
         lines.add(line)
     }
@@ -45,18 +45,18 @@ class PaintViewModel: ViewModel(){
     }
 
 
-    fun addTexts(text: String) {
+    fun addTexts(text: TextBox) {
         texts.add(text)
     }
 
-    fun removeTexts(text: String) {
+    fun removeTexts(text: TextBox) {
         texts.remove(text)
     }
 
     fun clearTexts() {
         texts.clear()
     }
-    fun getTexts(): List<String> {
+    fun getTexts(): List<TextBox> {
         return texts
     }
 
@@ -91,6 +91,17 @@ class PaintViewModel: ViewModel(){
             // Image with the given src found, update it
             images[imageIndex] = updatedImageData
         }
+    }
+
+    fun updateTextCoordinates(text: TextBox, offsetX: Float, offsetY: Float) {
+        text.x = offsetX
+        text.y = offsetY
+
+    }
+
+    fun updateTextValue(text: TextBox, newValue:String) {
+        text.value = newValue
+
     }
 
 }

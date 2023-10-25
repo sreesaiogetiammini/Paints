@@ -142,7 +142,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
             }
         }
     )
-    var textList by remember { mutableStateOf(emptyList<String>()) }
+    var textList by remember { mutableStateOf(emptyList<TextBox>()) }
 
 
 
@@ -194,7 +194,8 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                         navController.navigate(Screen.DrawScreen.route + "/$userId" +"/dummy")
                                     }
                                     if(i == 6){
-                                        myviewModel.addTexts("Add Text")
+                                        val text = TextBox(0f,0f,"Add Text")
+                                        myviewModel.addTexts(text)
                                     }
                                     if(i == 7){
                                         PhotoPickerLauncher.launch(
@@ -517,12 +518,13 @@ fun updateGravityData(sensorManager: SensorManager, marbleViewModel: PaintViewMo
     }
 }
 
-
 @Composable
-fun  addTextField(myviewModel: PaintViewModel,text : String){
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
-    var textValue by remember { mutableStateOf(text) }
+fun  addTextField(myviewModel: PaintViewModel,text : TextBox ){
+
+    var textValue by remember { mutableStateOf(text.value) }
+    var offsetX by remember { mutableStateOf(text.x) }
+    var offsetY by remember { mutableStateOf(text.y) }
+
     Box(
         modifier = Modifier
             .size(200.dp)
@@ -532,12 +534,14 @@ fun  addTextField(myviewModel: PaintViewModel,text : String){
                     change.consume()
                     offsetX += dragAmount.x
                     offsetY += dragAmount.y
+                    myviewModel.updateTextCoordinates(text, offsetX, offsetY)
                 }
             }
     ) {
 
         TextField(value = textValue, onValueChange = {
             textValue = it
+            myviewModel.updateTextValue(text,textValue)
         })
         IconButton(
             onClick = {
@@ -555,7 +559,6 @@ fun  addTextField(myviewModel: PaintViewModel,text : String){
     }
 
 }
-
 
 
 
@@ -660,9 +663,9 @@ fun SaveDrawingDialog(
 
 
 
-fun deserializeDrawingTexts(drawingTexts: String?): List<String> {
+fun deserializeDrawingTexts(drawingTexts: String?): List<TextBox> {
     val gson = Gson()
-    val listType = object : TypeToken<List<String>>() {}.type
+    val listType = object : TypeToken<List<TextBox>>() {}.type
     return gson.fromJson(drawingTexts, listType)
 }
 
