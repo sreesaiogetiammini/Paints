@@ -36,6 +36,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 @Composable
 fun SignUpScreen(navController: NavController, databaseHelper: DatabaseHelper) {
@@ -98,15 +100,32 @@ fun SignUpScreen(navController: NavController, databaseHelper: DatabaseHelper) {
                         snackbarMessage = "Passwords do not match."
                     }
                     else -> {
-                        if (databaseHelper.insertData(email, password)) {
-                            // Successfully registered, navigate back to LoginScreen
-                            navController.navigate(Screen.LoginScreen.route) {
-                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+//                        if (databaseHelper.insertData(email, password)) {
+//                            // Successfully registered, navigate back to LoginScreen
+//                            navController.navigate(Screen.LoginScreen.route) {
+//                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+//                            }
+//                        } else {
+//                            // Handle registration failure
+//                            snackbarMessage = "Registration failed. Email might be taken."
+//                        }
+                        Firebase.auth.createUserWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    // Registration was successful
+                                    val user = Firebase.auth.currentUser
+                                    //databaseHelper.insertData(user!!.uid,email, password)
+                                    snackbarMessage = "Sign Up Sucessful "
+                                    navController.navigate(Screen.LoginScreen.route) {
+                                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                                     }
+                                    // Handle the newly registered user, e.g., navigate to the next screen.
+                                } else {
+                                    // Registration failed, handle the error.
+                                    snackbarMessage = task.exception.toString()
+                                    // Handle the error, e.g., show an error message.
+                                }
                             }
-                        } else {
-                            // Handle registration failure
-                            snackbarMessage = "Registration failed. Email might be taken."
-                        }
                     }
                 }
             }) {
