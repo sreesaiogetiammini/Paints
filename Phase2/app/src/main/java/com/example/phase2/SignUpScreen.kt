@@ -114,7 +114,7 @@ fun SignUpScreen(navController: NavController, databaseHelper: DatabaseHelper) {
                                 if (task.isSuccessful) {
                                     // Registration was successful
                                     val user = Firebase.auth.currentUser
-                                    databaseHelper.insertData(user!!.uid,email, password)
+                                    //databaseHelper.insertData(user!!.uid,email, password)
                                     snackbarMessage = "Sign Up Sucessful "
                                     navController.navigate(Screen.LoginScreen.route) {
                                         popUpTo(Screen.LoginScreen.route) { inclusive = true }
