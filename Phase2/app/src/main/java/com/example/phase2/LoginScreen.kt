@@ -36,6 +36,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 
 @Composable
@@ -45,9 +47,11 @@ fun LoginScreen(navController: NavController, databaseHelper: DatabaseHelper) {
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
     val isError by remember { derivedStateOf { snackbarMessage != null } }
     val errorColor: Color by animateColorAsState(if (isError) Color.Red else Color.Transparent)
-//    val errorColor: Color by animateColorAsState(if (isError) Color.Red else Color.Transparent)
+
+    var user by remember { mutableStateOf(Firebase.auth.currentUser) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -66,40 +70,70 @@ fun LoginScreen(navController: NavController, databaseHelper: DatabaseHelper) {
             )
             Spacer(modifier = Modifier.height(16.dp))  // Added spacer for some space between image and text
             Text(text = "Welcome to Paints")
-            OutlinedTextField(value = email, onValueChange = { email = it.trim()}, label = { Text("Email") })
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it.trim() },
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = {
-                if(email.isEmpty() || password.isEmpty()) {
-                    snackbarMessage = "Email and Password cannot be empty."
+                OutlinedTextField(value = email, onValueChange = { email = it.trim()}, label = { Text("Email") })
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it.trim() },
+                    label = { Text("Password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(onClick = {
+                    if (email.isEmpty() || password.isEmpty()) {
+                        snackbarMessage = "Email and Password cannot be empty."
+                    }
+
+                    Firebase.auth.signInWithEmailAndPassword(email, password)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                // Sign-in was successful
+                                 user = Firebase.auth.currentUser
+                                 val userID = databaseHelper.getUser(user!!.uid)
+                                 Log.e("ID",user.toString())
+                                 snackbarMessage = "Excited for your new Masterpiece"
+                                navController.navigate(Screen.UserScreen.route+"/$userID" )
+                            }
+                            else {
+                                // Sign-in failed, handle the error.
+                                 snackbarMessage = task.exception!!.message.toString()
+                                // Handle the error, e.g., show an error message.
+                            }
+                        }
+
+
+//                    else if (databaseHelper.checkUser(email, password)) {
+//                        // Valid credentials, navigate to UserScreen
+//                        val userID = databaseHelper.getUser(email, password)
+//                        Log.e("ID",userID.toString())
+//                        snackbarMessage = "Excited for your new Masterpiece"
+//                        navController.navigate(Screen.UserScreen.route+"/$userID" )
+//                    } else {
+//                        // Handle invalid credentials
+//                        snackbarMessage = "The email address or Password that you've entered doesn't match any account. Sign up for an account."
+//                    }
+                }) {
+                    Text("Login")
                 }
-                else if (databaseHelper.checkUser(email, password)) {
-                    // Valid credentials, navigate to UserScreen
-                    val userID = databaseHelper.getUser(email, password)
-                    Log.e("ID",userID.toString())
-                    snackbarMessage = "Excited for your new Masterpiece"
-                    navController.navigate(Screen.UserScreen.route+"/$userID" )
-                } else {
-                    // Handle invalid credentials
-                    snackbarMessage = "The email address or Password that you've entered doesn't match any account. Sign up for an account."
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = {
+                    // Navigate to SignUpScreen for user registration
+                    navController.navigate(Screen.SignUpScreen.route)
+                }) {
+                    Text("Signup")
                 }
-            }) {
-                Text("Login")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = {
-                // Navigate to SignUpScreen for user registration
-                navController.navigate(Screen.SignUpScreen.route)
-            }) {
-                Text("Signup")
-            }
+
+
+
+
+
+
+
+
+
 
             if (isError) {
                 Text(
@@ -112,6 +146,8 @@ fun LoginScreen(navController: NavController, databaseHelper: DatabaseHelper) {
                 )
             }
         }
+
+
     }
 }
 

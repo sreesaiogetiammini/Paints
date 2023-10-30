@@ -10,7 +10,7 @@ data class PaintsData(
     var drawingImages: String,
     // need to convert the list of ImageData to string and store here
     var drawingTexts: String,
-    var userId: Long
+    var userId: String
 
 //    var misc: String, // Store image sources and coordinates
 

@@ -2,6 +2,7 @@ package com.example.phase2
 
 import ImageDataTypeAdapter
 import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.hardware.Sensor
@@ -98,13 +99,6 @@ import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.request.post
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
-import io.ktor.util.InternalAPI
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -316,17 +310,12 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
             .border(5.dp, Color.Blue, RectangleShape)
         )
         {
-
-            // Jin Work on this
-//            if(aiPaintingEnabled){
-//                MarbleRollingApp(myviewModel,sensorManager)
-//            }
-
+            MarbleRollingApp(myviewModel,sensorManager)
             if (drawingName.isNotBlank() && drawingName != "dummy") {
                 LaunchedEffect(Unit) {
                     val drawingData = paintsRepository.getDrawingByDrawingName(
                         drawingName = paintingName,
-                        userId = id.toLong()
+                        userId = id
                     )
                     if (drawingData != null) {
                         lines = deserializeDrawingData(drawingData.drawingData)
@@ -389,7 +378,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             val userId = id // Replace with the actual user ID
                             if (paintingName.isNotBlank()) {
                                 val paintsData = PaintsData(
-                                    userId = userId.toLong(),
+                                    userId = userId,
                                     drawingName = paintingName,
                                     drawingData = drawingData,
                                     drawingImages = drawingImages,
@@ -399,7 +388,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                 val existingDrawingData =
                                     paintsRepository.getDrawingByDrawingName(
                                         drawingName = paintingName,
-                                        userId = userId.toLong()
+                                        userId = userId
                                     )
 
                                 if (existingDrawingData != null) {
@@ -448,6 +437,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
 
 
+
 suspend fun takeScreenshot(myViewModel: PaintViewModel, activity: ComponentActivity?, context: Context) {
     if (activity == null) return
 
@@ -470,26 +460,23 @@ suspend fun takeScreenshot(myViewModel: PaintViewModel, activity: ComponentActiv
     val fos = context.contentResolver.openOutputStream(uri)
     screenshot.compress(Bitmap.CompressFormat.PNG,100, fos!!)
     fos!!.close()
-    uploadImageUriToServer(uri.toString(), "http://0.0.0.0:8080/paints/share")
-//    val shareIntent: Intent = Intent().apply {
-//        action = Intent.ACTION_SEND
-//        putExtra(Intent.EXTRA_STREAM, uri)
-//        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-//        type = "image/png"
-//    }
-//
-//    context.startActivity(Intent.createChooser(shareIntent, "Share Screenshot"))
+
+    val shareIntent: Intent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_STREAM, uri)
+        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        type = "image/png"
+    }
+
+    context.startActivity(Intent.createChooser(shareIntent, "Share Screenshot"))
+
+
+
+
+
 }
 
-@OptIn(InternalAPI::class)
-suspend fun uploadImageUriToServer(imageUri: String, serverUrl: String) {
-    val client = HttpClient(CIO)
-    val response: io.ktor.client.statement.HttpResponse = client.post(serverUrl) {
-        contentType(ContentType.Application.Json)
-        body = ImageUriUploadRequest(imageUri)
-    }
-    UploadResponse(response.status.equals(HttpStatusCode.Created))
-}
+
 data class ImageUriUploadRequest(val imageUri: String)
 data class UploadResponse(val success: Boolean)
 

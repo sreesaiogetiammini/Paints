@@ -2,7 +2,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
-    kotlin("plugin.serialization") version "1.9.10"
+    id("com.google.gms.google-services")
+
 }
 
 android {
@@ -117,13 +118,14 @@ dependencies {
     //
     implementation("io.coil-kt:coil-compose:2.4.0")
 
-    //Ktor Implementations
-    val ktor_version = "2.3.5"
-    implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:$ktor_version")
-    implementation("io.ktor:ktor-client-android:$ktor_version")
-    implementation("io.ktor:ktor-client-serialization:$ktor_version")
-    implementation("io.ktor:ktor-client-logging:$ktor_version")
-    implementation("ch.qos.logback:logback-classic:1.2.3")
-    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    //Firebase
+    // Import the BoM for the Firebase platform
+    implementation(platform("com.google.firebase:firebase-bom:32.4.0"))
+
+    // Add the dependency for the Firebase Authentication library
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation("com.google.firebase:firebase-auth-ktx")
+
+    // Also add the dependency for the Google Play services library and specify its version
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 }
