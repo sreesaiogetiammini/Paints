@@ -11,7 +11,7 @@ import androidx.room.Update
 
 @Database(
     entities = [PaintsData :: class],
-    version = 3,
+    version = 5,
     exportSchema = false
 )
 abstract class PaintsDatabase : RoomDatabase() {
@@ -44,19 +44,19 @@ interface PaintsDao {
     suspend fun insertPaintsData(data: PaintsData)
 
     @Query("SELECT * FROM paints WHERE drawingName = :drawingName AND userId = :userId LIMIT 1")
-    suspend fun getDrawingByDrawingName(drawingName: String, userId: Long): PaintsData?
+    suspend fun getDrawingByDrawingName(drawingName: String, userId: String): PaintsData?
 
     @Query("DELETE FROM paints WHERE drawingName = :drawingName AND userId = :userId")
-    suspend fun deletePaintingByDrawingName(drawingName: String, userId: Long): Int
+    suspend fun deletePaintingByDrawingName(drawingName: String, userId: String): Int
 
     @Update
     suspend fun updatePaintsData(paintsData: PaintsData)
 
     @Query("SELECT * FROM paints WHERE userId = :userId")
-    fun getPaintingsByUserId(userId: Long): List<PaintsData>
+    fun getPaintingsByUserId(userId: String): List<PaintsData>
 
     @Query("SELECT drawingName FROM paints WHERE userId = :userId")
-    fun getDrawingNamesByUserId(userId: Long): List<String>
+    fun getDrawingNamesByUserId(userId: String): List<String>
 
 //    @Query("SELECT * FROM paints")
 //    suspend fun getAllPaintsData(): LiveData<List<PaintsData>>

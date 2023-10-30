@@ -22,7 +22,7 @@ class PaintsRepository(
     }
 
     @WorkerThread
-    suspend fun getDrawingByDrawingName(drawingName: String, userId: Long): PaintsData? {
+    suspend fun getDrawingByDrawingName(drawingName: String, userId: String): PaintsData? {
         return paintsDao.getDrawingByDrawingName(drawingName, userId)
     }
 
@@ -32,12 +32,12 @@ class PaintsRepository(
     }
 
     @WorkerThread
-    fun getPaintingsByUserId(userId: Long): List<PaintsData> {
+    fun getPaintingsByUserId(userId: String): List<PaintsData> {
         return paintsDao.getPaintingsByUserId(userId)
     }
 
     @WorkerThread
-    suspend fun getPaintingNamesByUserId(userId: Long): List<String> {
+    suspend fun getPaintingNamesByUserId(userId: String): List<String> {
         return withContext(Dispatchers.IO) {
             paintsDao.getDrawingNamesByUserId(userId)
         }
@@ -45,7 +45,7 @@ class PaintsRepository(
 
 
     @WorkerThread
-    suspend fun deletePaintingByDrawingName(drawingName: String, userId: Long): Int {
+    suspend fun deletePaintingByDrawingName(drawingName: String, userId: String): Int {
         return withContext(Dispatchers.IO) {
             paintsDao.deletePaintingByDrawingName(drawingName,userId)
         }

@@ -55,7 +55,7 @@ fun UserScreen(navController: NavController, paintsRepository: PaintsRepository,
     LaunchedEffect(1){
         scope.launch {
             var id = userId // Replace with the actual user ID
-            drawingNames = paintsRepository.getPaintingNamesByUserId(userId.toLong())
+            drawingNames = paintsRepository.getPaintingNamesByUserId(userId)
         }
     }
 
@@ -203,7 +203,7 @@ fun ListItem(drawingName: String, navController: NavController,paintsRepository:
 
 
 @Composable
-fun deleteDrawingName(drawingName: String, userId: Long,paintsRepository:PaintsRepository) {
+fun deleteDrawingName(drawingName: String, userId: String,paintsRepository:PaintsRepository) {
     val scope = rememberCoroutineScope()
     // Call the repository function to delete the drawing by name and user ID
     LaunchedEffect(1){
