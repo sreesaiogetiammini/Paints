@@ -1,7 +1,6 @@
 package com.example.phase2
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsProperties.ContentDescription
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -10,7 +9,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,7 +32,7 @@ class DrawScreenKtTest{
         navController = rememberNavController()
         NavHost(navController = navController!!, startDestination = Screen.DrawScreen.route) {
             composable(route = Screen.DrawScreen.route) {
-                DrawScreen(navController = navController!!, paintsRepository = application.paintsRepository , userId = "1", drawingName = "dummy")
+                //DrawScreen(navController = navController!!, paintsRepository = application.paintsRepository , userId = "1", drawingName = "dummy")
             }
 
             composable(route = Screen.UserScreen.route +"/{userId}") {

@@ -91,7 +91,7 @@ fun LoginScreen(navController: NavController, databaseHelper: DatabaseHelper) {
                             if (task.isSuccessful) {
                                 // Sign-in was successful
                                  user = Firebase.auth.currentUser
-                                 val userID = databaseHelper.getUser(user!!.uid)
+                                 val userID = user!!.uid
                                  Log.e("ID",user.toString())
                                  snackbarMessage = "Excited for your new Masterpiece"
                                 navController.navigate(Screen.UserScreen.route+"/$userID" )

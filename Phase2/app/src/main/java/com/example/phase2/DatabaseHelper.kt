@@ -1,6 +1,5 @@
 package com.example.phase2
 
-import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
@@ -23,7 +22,7 @@ class DatabaseHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME,
 
 
     override fun onCreate(db: SQLiteDatabase?) {
-        db?.execSQL("CREATE TABLE $TABLE_NAME ($COLUMN_USER_UID TEXT PRIMARY KEY , $COL_EMAIL TEXT, $COL_PASSWORD TEXT)")
+        //db?.execSQL("CREATE TABLE $TABLE_NAME ($COLUMN_USER_UID TEXT PRIMARY KEY , $COL_EMAIL TEXT, $COL_PASSWORD TEXT)")
 
         val createDrawingsTableQuery = """
             CREATE TABLE IF NOT EXISTS $TABLE_DRAWINGS (
@@ -43,15 +42,15 @@ class DatabaseHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME,
         onCreate(db)
     }
 
-    fun insertData(userUID: String,email: String, password: String): Boolean {
-        val db = this.writableDatabase
-        val contentValues = ContentValues()
-        contentValues.put(COLUMN_USER_UID, userUID)
-        contentValues.put(COL_EMAIL, email)
-        contentValues.put(COL_PASSWORD, password)
-        val result = db.insert(TABLE_NAME, null, contentValues)
-        return !result.equals(-1)
-    }
+//    fun insertData(userUID: String,email: String, password: String): Boolean {
+//        val db = this.writableDatabase
+//        val contentValues = ContentValues()
+//        contentValues.put(COLUMN_USER_UID, userUID)
+//        contentValues.put(COL_EMAIL, email)
+//        contentValues.put(COL_PASSWORD, password)
+//        val result = db.insert(TABLE_NAME, null, contentValues)
+//        return !result.equals(-1)
+//    }
 
 //    fun checkUser(userUID: String): Boolean {
 //        val db = this.readableDatabase
@@ -63,21 +62,21 @@ class DatabaseHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME,
 //    }
 
 
-    fun getUser(userUID: String): String {
-        val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT $COLUMN_USER_UID FROM $TABLE_NAME WHERE $COLUMN_USER_UID = ?", arrayOf(userUID))
-        var result = ""
-
-        if (cursor.moveToFirst()) {
-            // Move to the first row (if available)
-            result = cursor.getString(0)
-        }
-
-        cursor.close()  // Close the cursor
-        db.close()  // Close the database connection
-
-        return result
-    }
+//    fun getUser(userUID: String): String {
+//        val db = this.readableDatabase
+//        val cursor = db.rawQuery("SELECT $COLUMN_USER_UID FROM $TABLE_NAME WHERE $COLUMN_USER_UID = ?", arrayOf(userUID))
+//        var result = ""
+//
+//        if (cursor.moveToFirst()) {
+//            // Move to the first row (if available)
+//            result = cursor.getString(0)
+//        }
+//
+//        cursor.close()  // Close the cursor
+//        db.close()  // Close the database connection
+//
+//        return result
+//    }
 
 //    fun insertDrawing(userId: Int,drawingName: String, drawingData: Any): Long {
 //        Log.e("data", drawingData.toString())
