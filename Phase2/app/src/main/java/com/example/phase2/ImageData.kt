@@ -7,6 +7,6 @@ import android.net.Uri
 // will be used to save images
 data class ImageData(
     val src: Uri,
-    val x: Float,
-    val y: Float
+    var x: Float,
+    var y: Float
 )
