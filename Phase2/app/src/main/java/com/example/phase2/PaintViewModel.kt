@@ -43,8 +43,12 @@ class PaintViewModel: ViewModel(){
         images.add(image)
     }
 
-    fun removeImage(image: ImageData) {
-        images.remove(image)
+    fun removeImage(image: ImageData , imageSrc:Uri) {
+        val imageIndex = images.indexOfFirst { it.src == imageSrc }
+        if (imageIndex != -1) {
+            // Image with the given src found, update it
+            images.removeAt(imageIndex)
+        }
     }
 
     fun getImages(): List<ImageData> {
@@ -57,7 +61,11 @@ class PaintViewModel: ViewModel(){
     }
 
     fun removeTexts(text: TextBox) {
-        texts.remove(text)
+        val textValue = text.value
+        val textIndex = texts.indexOfFirst { it.value == textValue }
+        if (textIndex != -1) {
+            texts.removeAt(textIndex)
+        }
     }
 
     fun clearTexts() {
