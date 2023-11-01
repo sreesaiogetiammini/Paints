@@ -2,7 +2,6 @@ package com.example.phase2
 
 import ImageDataTypeAdapter
 import android.content.Context
-import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.hardware.Sensor
@@ -11,6 +10,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -30,32 +30,38 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -96,6 +102,10 @@ import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.ColorEnvelope
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageReference
+import com.google.firebase.storage.ktx.storage
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -103,25 +113,31 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
+import androidx.compose.material3.LinearProgressIndicator
+import com.google.firebase.storage.FileDownloadTask
+import com.google.firebase.storage.UploadTask
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.callbackFlow
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository, userId: String,drawingName: String,sensorManager: SensorManager) {
-    var expanded  by remember { mutableStateOf(false) }
     var sliderPosition by remember { mutableStateOf(10f) }
     var clickedBtn by remember { mutableStateOf(-1) }
     var isSliderDialogOpen by remember { mutableStateOf(false) }
     var isSaveDialogOpen by remember { mutableStateOf(false) }
-    val myviewModel: PaintViewModel = viewModel()
+    val myViewModel: PaintViewModel = viewModel()
     var isColorPickerDialogVisible by remember { mutableStateOf(false) }
     var paintingName by remember { mutableStateOf(drawingName) }
     var lines by remember { mutableStateOf(emptyList<Line>()) }
-    val lineColor by rememberUpdatedState(myviewModel.lineColor)
-    val lineStroke by rememberUpdatedState(myviewModel.lineStroke)
+    val lineColor by rememberUpdatedState(myViewModel.lineColor)
+    val lineStroke by rememberUpdatedState(myViewModel.lineStroke)
     var id by remember { mutableStateOf(userId) }
     val scope = rememberCoroutineScope()
     val icons = listOf(
@@ -132,36 +148,42 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
         painterResource(R.drawable.erasor),
         painterResource(R.drawable.baseline_fiber_new_24),
         painterResource(R.drawable.baseline_text_fields_24),
-        painterResource(R.drawable.baseline_image_24)
+        painterResource(R.drawable.baseline_image_24),
+        painterResource(R.drawable.baseline_cloud_download_24)
     )
     val gson: Gson = GsonBuilder()
         .registerTypeAdapter(ImageData::class.java, ImageDataTypeAdapter())
         .create()
     var isCapDialogOpen by remember { mutableStateOf(false) }
-    var imagesData by remember { mutableStateOf(mutableListOf<ImageData>()) }
-    var imageUris by remember { mutableStateOf(mutableListOf<Uri>()) }
+    var imageDataList by remember { mutableStateOf(emptyList<ImageData>()) }
+    var imageUris by remember { mutableStateOf(emptyList<Uri>()) }
     val PhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
         onResult = {uris ->
             imageUris = uris.toMutableList()
             imageUris.forEach{uri ->
                 Log.e("uri", uri.toString())
-                myviewModel.addImage(ImageData(uri, 0f,0f))
-                for (image in myviewModel.getImages()){
-                    Log.e("132", image.src.toString())
-                }
+                myViewModel.addImage(ImageData(uri, 0f,0f))
             }
         }
     )
     var textList by remember { mutableStateOf(emptyList<TextBox>()) }
-    var screenshotTaken by remember { mutableStateOf(0) }
+    var imageUploadedTpFireBase by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val activity = (LocalView.current.context as? ComponentActivity)
     val aiPaintingEnabled by remember { mutableStateOf(false) }
-
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var selectedImagesFromServer by remember { mutableStateOf(mutableListOf<Uri>()) }
     Scaffold(
         topBar = {
-            topBarStuff(navController = navController, userId = id , aiPaintingEnabled)
+           topBarStuff(
+               navController = navController,
+               userId = userId,
+               myViewModel = myViewModel,
+               activity = activity,
+               context = context
+           )
         },
         bottomBar = {
             BottomAppBar(
@@ -197,23 +219,26 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                         isColorPickerDialogVisible = !isColorPickerDialogVisible
                                     }
                                     if(i == 3){
-                                        myviewModel.updateLineColor(Color.Black)
+                                        myViewModel.updateLineColor(Color.Black)
                                     }
 
                                     if(i == 4){
-                                        myviewModel.updateLineColor(Color.White)
+                                        myViewModel.updateLineColor(Color.White)
                                     }
                                     if(i == 5){
                                         navController.navigate(Screen.DrawScreen.route + "/$userId" +"/dummy")
                                     }
                                     if(i == 6){
                                         val text = TextBox(0f,0f,"Add Text")
-                                        myviewModel.addTexts(text)
+                                        myViewModel.addTexts(text)
                                     }
                                     if(i == 7){
                                         PhotoPickerLauncher.launch(
                                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                         )
+                                    }
+                                    if(i == 8){
+                                        showBottomSheet = !showBottomSheet
                                     }
                                 },
                                 isClicked = isClicked,
@@ -222,7 +247,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                         }
 
                         if(isCapDialogOpen){
-                            addCapDialog(myViewModel = myviewModel,
+                            addCapDialog(myViewModel = myViewModel,
                                 onDialogDismiss = {
                                     isCapDialogOpen = !isCapDialogOpen
                                 })
@@ -231,7 +256,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                         if (isSliderDialogOpen)
                         {
                             addSliderDialog(
-                                myViewModel = myviewModel,
+                                myViewModel = myViewModel,
                                 sliderPosition = sliderPosition,
                                 onDialogDismiss = {
                                     isSliderDialogOpen = !isSliderDialogOpen
@@ -242,7 +267,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
                         if (isColorPickerDialogVisible) {
                             addColorPickerDialog(
-                                myViewModel = myviewModel,
+                                myViewModel = myViewModel,
                                 onDialogDismiss = {
                                     isColorPickerDialogVisible = !isColorPickerDialogVisible
                                 }
@@ -251,42 +276,166 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
 
 
+
+                        if (showBottomSheet) {
+                            var serverImages by remember { mutableStateOf(emptyList<Uri>()) }
+
+                            // Load server images from Firebase Storage
+                            LaunchedEffect(Unit) {
+                                serverImages = loadServerImages()
+                            }
+                            if (serverImages.size == 0) {
+                                // Show a progress indicator while images are loading
+                                LinearProgressIndicator(
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+
+                            ModalBottomSheet(
+                                onDismissRequest = {
+                                    showBottomSheet = false
+                                },
+                                sheetState = sheetState
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(20.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ){
+                                    Button(onClick = {
+                                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                            if (!sheetState.isVisible) {
+                                                showBottomSheet = false
+                                            }
+                                        }
+                                    }) {
+                                        Text("Hide bottom sheet")
+                                    }
+
+                                    Button(onClick = {
+                                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                            if (!sheetState.isVisible) {
+                                                showBottomSheet = false
+                                            }
+                                        }
+                                        val numSelectedImages = selectedImagesFromServer.size
+
+                                        // Display the number of images as a Toast
+                                        Toast.makeText(
+                                            context,
+                                            "Selected $numSelectedImages images",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+
+                                        val storage: FirebaseStorage = Firebase.storage
+                                        val localImageUris = mutableListOf<Uri>()
+                                        val serverImageUris = selectedImagesFromServer.toMutableList()
+
+                                        scope.launch {
+                                            serverImageUris.forEach { uri ->
+                                                val localFileName = "image_${System.currentTimeMillis()}.png"
+                                                val localFile = File(context.filesDir, localFileName)
+                                                val storageReference: StorageReference = storage.getReferenceFromUrl(uri.toString())
+
+                                                try {
+                                                    // Download the image from Firebase Storage to the local file
+                                                    val fileDownloadTask: FileDownloadTask.TaskSnapshot? = storageReference.getFile(localFile).await()
+                                                    Log.i("File Download", "Success: " + Uri.fromFile(localFile).toString())
+                                                    localImageUris.add(Uri.fromFile(localFile))
+                                                }
+                                                catch (e: Exception) {
+                                                    Log.e("File Download Failed", "Error: " + e.message, e)
+                                                }
+                                            }
+
+                                            Log.i("Local Files Download",localImageUris.size.toString())
+
+                                            localImageUris.forEach { uri ->
+                                                myViewModel.addImage(ImageData(uri,0f,0f))
+                                            }
+                                            selectedImagesFromServer.clear()
+
+                                        }
+
+                                    })
+
+
+                                    {
+                                        Text("Add Images")
+                                    }
+                                }
+
+
+                                // Display the list of images in a LazyColumn
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(4),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                )
+                                {
+                                    items(serverImages) { imageUri ->
+                                        val (checkedState, onStateChange) = remember { mutableStateOf(false) }
+
+
+
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(8.dp)
+                                                .border(2.dp, Color.Black)
+                                        ){
+                                            AsyncImage(model = imageUri, contentDescription = "Server Images" )
+                                            val isChecked = selectedImagesFromServer.contains(imageUri)
+                                            Checkbox(
+                                                checked = checkedState, // Set the initial state as needed
+                                                onCheckedChange = {
+                                                    onStateChange(!checkedState)
+                                                    if (!isChecked) {
+                                                        selectedImagesFromServer.add(imageUri)
+                                                        Log.i("Size after add",selectedImagesFromServer.size.toString())
+                                                        // Add to the list when checked
+                                                    } else {
+                                                        selectedImagesFromServer.remove(imageUri)
+                                                        Log.i("Size after remove",selectedImagesFromServer.size.toString())// Remove from the list when unchecked
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .align(Alignment.TopEnd)
+                                            )
+                                            IconButton(
+                                                onClick = {
+                                                    deleteImageFromFirebase(imageUri,context)
+                                                    serverImages = serverImages.filter { it != imageUri }
+                                                },
+                                                modifier = Modifier
+                                                    .align(Alignment.TopStart) // Position the close button in the top-right corner
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Close,
+                                                    contentDescription = "Delete Server Image"
+                                                )
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
+
                     }
                 }
             }
         },
         floatingActionButton = {
             Column{
-                FloatingActionButton(onClick = { expanded = !expanded }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                if(expanded){
-                    FloatingActionButton(onClick = {
-                        isSaveDialogOpen = !isSaveDialogOpen
-                    }) {
-                        Icon(
-                            painterResource(id = R.drawable.baseline_save_as_24),
-                            contentDescription = "Save As"
-                        )
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    FloatingActionButton(onClick = {
-                        screenshotTaken++
-                    }) {
-                        Icon(
-                            painterResource(id = R.drawable.baseline_share_24),
-                            contentDescription = "Share"
-                        )
-                    }
-                    if(screenshotTaken>0){
-                        LaunchedEffect(Unit){
-                            takeScreenshot(myviewModel,activity, context)
-                        }
-                    }
-
+                FloatingActionButton(onClick = {
+                    isSaveDialogOpen = !isSaveDialogOpen
+                }) {
+                    Icon(
+                        painterResource(id = R.drawable.baseline_save_as_24),
+                        contentDescription = "Save As"
+                    )
                 }
             }
         }
@@ -310,7 +459,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
             .border(5.dp, Color.Blue, RectangleShape)
         )
         {
-            MarbleRollingApp(myviewModel,sensorManager)
+            MarbleRollingApp(myViewModel,sensorManager)
             if (drawingName.isNotBlank() && drawingName != "dummy") {
                 LaunchedEffect(Unit) {
                     val drawingData = paintsRepository.getDrawingByDrawingName(
@@ -319,16 +468,16 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                     )
                     if (drawingData != null) {
                         lines = deserializeDrawingData(drawingData.drawingData)
-                        imagesData = deserializeDrawingImages(drawingData.drawingImages)
+                        imageDataList = deserializeDrawingImages(drawingData.drawingImages)
                         textList = deserializeDrawingTexts(drawingData.drawingTexts)
                         for (line in lines) {
-                            myviewModel.addLine(line)
+                            myViewModel.addLine(line)
                         }
-                        for(image in imagesData){
-                            myviewModel.addImage(image)
+                        for(image in imageDataList){
+                            myViewModel.addImage(image)
                         }
                         for(text in textList){
-                            myviewModel.addTexts(text)
+                            myViewModel.addTexts(text)
                         }
                     }
                 }
@@ -348,7 +497,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
                         lines =
                             lines + line_custom // Append the new line to the list of lines
-                        myviewModel.addLine(line = line_custom)
+                        myViewModel.addLine(line = line_custom)
                     }
                 })
             {
@@ -367,9 +516,9 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                 SaveDrawingDialog(
                     onSave = {
                         scope.launch {
-                            val lines = myviewModel.getLines()
-                            val images = myviewModel.getImages()
-                            val texts = myviewModel.getTexts()
+                            val lines = myViewModel.getLines()
+                            val images = myViewModel.getImages()
+                            val texts = myViewModel.getTexts()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
                             val drawingImages = gson.toJson(images)
                             Log.e("drawing Data", drawingImages)
@@ -418,246 +567,33 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
             }
 
 
-            myviewModel.getImages().forEach { uri ->
+            myViewModel.getImages().forEach { uri ->
                 var imageData by remember {
                     mutableStateOf(uri)
                 }
-                addImageToCanvas(imageData = imageData, myviewModel = myviewModel)
+                addImageToCanvas(imageData = imageData, myViewModel = myViewModel)
             }
-            textList = myviewModel.getTexts()
+            textList = myViewModel.getTexts()
 
             for (text in textList) {
-                addTextField( myviewModel, text)
+                addTextField( myViewModel, text)
             }
 
         }
     }
 
 }
-
-
-
-
-suspend fun takeScreenshot(myViewModel: PaintViewModel, activity: ComponentActivity?, context: Context) {
-    if (activity == null) return
-
-
-    val deviceWidth = Resources.getSystem().displayMetrics.widthPixels
-    val deviceHeight = Resources.getSystem().displayMetrics.heightPixels
-
-    val screenshot = myViewModel.captureCanvasAsBitmap(deviceWidth,deviceHeight, context = context)
-    // Save the screenshot to a file
-    val timestamp = SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(Date())
-    val fileName = "Screenshot_$timestamp.png"
-    val screenshotFile = File(context.filesDir, fileName)
-
-    val uri = FileProvider.getUriForFile(
-        context,
-        "com.example.phase2.fileprovider",
-        screenshotFile
-    )
-
-    val fos = context.contentResolver.openOutputStream(uri)
-    screenshot.compress(Bitmap.CompressFormat.PNG,100, fos!!)
-    fos!!.close()
-
-    val shareIntent: Intent = Intent().apply {
-        action = Intent.ACTION_SEND
-        putExtra(Intent.EXTRA_STREAM, uri)
-        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        type = "image/png"
-    }
-
-    context.startActivity(Intent.createChooser(shareIntent, "Share Screenshot"))
-
-
-
-
-
-}
-
-
-data class ImageUriUploadRequest(val imageUri: String)
-data class UploadResponse(val success: Boolean)
-
-@Composable
-fun addImageToCanvas(imageData: ImageData,myviewModel: PaintViewModel){
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
-
-    Box(
-        modifier = Modifier
-            .size(200.dp)
-            .offset { IntOffset((imageData.x + offsetX).roundToInt(), (imageData.y + offsetY).roundToInt()) }
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                    offsetX += dragAmount.x
-                    offsetY += dragAmount.y
-
-                    myviewModel.updateImageDataBySrc(imageData.src, ImageData(imageData.src, offsetX, offsetY))
-
-                }
-            }
-    ) {
-        AsyncImage(
-            model = imageData.src,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        IconButton(
-            onClick = {
-                myviewModel.removeImage(imageData)
-            },
-            modifier = Modifier
-                .padding(4.dp) // Adjust the padding as needed
-                .align(Alignment.TopEnd) // Position the close button in the top-right corner
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Close Image"
-            )
-        }
-    }
-
-}
-
-@Composable
-fun MarbleRollingApp(marbleViewModel: PaintViewModel, sensorManager: SensorManager) {
-    val marbleOffset = marbleViewModel.gravityOffset.value
-    val trail = marbleViewModel.trailPositions
-
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        val maxWidth = constraints.maxWidth
-        val maxHeight = constraints.maxHeight
-
-        // Draw the trail
-        trail.forEach { position ->
-            Box(
-                modifier = Modifier.offset {
-                    IntOffset(position.x.roundToInt(), position.y.roundToInt())
-                }.size(10.dp).background(marbleViewModel.getLineColor())
-            )
-        }
-
-        LaunchedEffect(sensorManager) {
-            val accelMagFlow = updateGravityData(sensorManager, marbleViewModel, dampingFactor = 2f, maxWidth = maxWidth, maxHeight = maxHeight)
-            accelMagFlow.collect { offset ->
-                marbleViewModel.gravityOffset.value = offset
-            }
-        }
-
-        Marble(
-            x = marbleOffset.x,
-            y = marbleOffset.y,
-            maxWidth = maxWidth,
-            maxHeight = maxHeight,
-            marbleViewModel = marbleViewModel
-        )
-    }
-}
-
-fun updateGravityData(
-    sensorManager: SensorManager,
-    marbleViewModel: PaintViewModel,
-    dampingFactor: Float,
-    maxWidth: Int,
-    maxHeight: Int
-): Flow<Offset> {
-    return channelFlow {
-        val gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
-        var currentOffset = marbleViewModel.gravityOffset.value
-        val radius = 50.dp.value
-        val xMin = 0f
-        val xMax = maxWidth - 2 * radius
-        val yMin = 0f
-        val yMax = maxHeight - 2 * radius
-
-        val sensorListener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent?) {
-                event?.let {
-                    val gravityX = it.values[0]
-                    val gravityY = it.values[1]
-                    val deltaX = gravityX * dampingFactor
-                    val deltaY = gravityY * dampingFactor
-
-                    val constrainedX = (currentOffset.x + deltaX).coerceIn(xMin, xMax)
-                    val constrainedY = (currentOffset.y + deltaY).coerceIn(yMin, yMax)
-                    currentOffset = Offset(constrainedX, constrainedY)
-
-                    marbleViewModel.gravityOffset.value = currentOffset
-                    marbleViewModel.trailPositions.add(currentOffset)
-                    trySend(currentOffset)
-                } ?: run {
-                    Log.e("Event Null", "Gge")
-                }
-            }
-
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-        }
-
-        sensorManager.registerListener(
-            sensorListener,
-            gravitySensor,
-            SensorManager.SENSOR_DELAY_GAME
-        )
-        awaitClose {
-            sensorManager.unregisterListener(sensorListener)
-        }
-    }
-}
-
-@Composable
-fun  addTextField(myviewModel: PaintViewModel,text : TextBox ){
-
-    var textValue by remember { mutableStateOf(text.value) }
-    var offsetX by remember { mutableStateOf(text.x) }
-    var offsetY by remember { mutableStateOf(text.y) }
-
-    Box(
-        modifier = Modifier
-            .size(200.dp)
-            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                    offsetX += dragAmount.x
-                    offsetY += dragAmount.y
-                    myviewModel.updateTextCoordinates(text, offsetX, offsetY)
-                }
-            }
-    ) {
-
-        TextField(value = textValue, onValueChange = {
-            textValue = it
-            myviewModel.updateTextValue(text,textValue)
-        })
-        IconButton(
-            onClick = {
-                myviewModel.removeTexts(text)
-            },
-            modifier = Modifier
-                .padding(4.dp) // Adjust the padding as needed
-                .align(Alignment.TopEnd) // Position the close button in the top-right corner
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Close Image"
-            )
-        }
-    }
-
-}
-
-
 
 
 @Composable
-fun topBarStuff(navController: NavController, userId: String, aiPaintingEnabled: Boolean){
+fun topBarStuff(
+    navController: NavController,
+    userId: String,
+    myViewModel: PaintViewModel,
+    activity: ComponentActivity?,
+    context: Context
+){
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -674,15 +610,23 @@ fun topBarStuff(navController: NavController, userId: String, aiPaintingEnabled:
                 .weight(1f)
                 .background(MaterialTheme.colorScheme.primaryContainer), // Color.Purple
         )
-        IconButton(
+        var imageLoaded by remember { mutableStateOf(false) }
+
+        if (imageLoaded) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Button(
             onClick = {
-                aiPaintingEnabled != aiPaintingEnabled
+                imageLoaded = true
+                takeScreenshot(myViewModel,activity, context)
+                imageLoaded = false
             },
         ) {
-            Icon(
-                imageVector = Icons.Default.Face,
-                contentDescription = "AI Painter"
-            )
+            Image(painter = painterResource(id = R.drawable.baseline_upload_24),
+                contentDescription = "Upload Image")
         }
 
 
@@ -710,83 +654,6 @@ fun topBarStuff(navController: NavController, userId: String, aiPaintingEnabled:
     }
 }
 
-
-
-@Composable
-fun SaveDrawingDialog(
-    onSave: () -> Unit,
-    onDismiss: () -> Unit,
-    onNameChange: (String) -> Unit,
-    initialName: String
-) {
-    // Create and display your custom dialog here
-    // Include buttons for confirmation and dismissal
-    // You can use a Dialog Composable or a custom AlertDialog
-    // Example using Dialog Composable:
-    var paintingName by remember { mutableStateOf(initialName) }
-    Dialog(
-        onDismissRequest = { onDismiss() }
-    ) {
-
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            TextField(
-                value = paintingName,
-                onValueChange = {
-                    paintingName = it
-                    onNameChange(it) // Callback to handle painting name changes
-                },
-                label = { Text("Painting Name") }
-            )
-
-            // Include a button to confirm the save action
-            Button(
-                onClick = {
-                    onSave()
-                    onDismiss()
-                },
-                enabled = paintingName.isNotBlank() && paintingName != "dummy" && paintingName.length>3
-            ) {
-                Text("Confirm Save")
-            }
-
-            // Include a button to dismiss the dialog
-            Button(
-                onClick = {
-                    onDismiss()
-                },
-
-                ) {
-                Text("Cancel")
-            }
-        }
-    }
-}
-
-
-
-
-fun deserializeDrawingTexts(drawingTexts: String?): List<TextBox> {
-    val gson = Gson()
-    val listType = object : TypeToken<List<TextBox>>() {}.type
-    return gson.fromJson(drawingTexts, listType)
-}
-
-fun deserializeDrawingData(drawingData: String?): List<Line> {
-    val gson = Gson()
-    val listType = object : TypeToken<List<Line>>() {}.type
-    return gson.fromJson(drawingData, listType)
-}
-
-fun deserializeDrawingImages(imagesData: String?): MutableList<ImageData> {
-    val gson: Gson = GsonBuilder()
-        .registerTypeAdapter(ImageData::class.java, ImageDataTypeAdapter())
-        .create()
-    val imageDataType = object : TypeToken<MutableList<ImageData>>() {}.type
-    return gson.fromJson(imagesData, imageDataType) ?: mutableListOf()
-}
 @Composable
 fun AnimatedIconButton(
     icon: Painter,
@@ -920,17 +787,8 @@ fun addColorPickerDialog(myViewModel:PaintViewModel,onDialogDismiss: () -> Unit)
                 .height(450.dp)
                 .padding(10.dp)
         ) {
-//            HsvColorPicker(
-//                modifier = Modifier.fillMaxSize(),
-//                controller = ColorPickerController(),
-//                onColorChanged = { colorEnvelope: ColorEnvelope ->
-//                    val selectedLineColor = Color(colorEnvelope.color.toArgb())
-//                    myViewModel.updateLineColor(selectedLineColor)
-//                }
-//            )
+
             colorPicker(myViewModel)
-//
-            // Close button
             IconButton(
                 onClick = {
                     onDialogDismiss()
@@ -999,6 +857,95 @@ fun colorPicker(myViewModel: PaintViewModel){
     }
 }
 
+@Composable
+fun MarbleRollingApp(marbleViewModel: PaintViewModel, sensorManager: SensorManager) {
+    val marbleOffset = marbleViewModel.gravityOffset.value
+    val trail = marbleViewModel.trailPositions
+
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val maxWidth = constraints.maxWidth
+        val maxHeight = constraints.maxHeight
+
+        // Draw the trail
+        trail.forEach { position ->
+            Box(
+                modifier = Modifier
+                    .offset {
+                        IntOffset(position.x.roundToInt(), position.y.roundToInt())
+                    }
+                    .size(10.dp)
+                    .background(marbleViewModel.getLineColor())
+            )
+        }
+
+        LaunchedEffect(sensorManager) {
+            val accelMagFlow = updateGravityData(sensorManager, marbleViewModel, dampingFactor = 2f, maxWidth = maxWidth, maxHeight = maxHeight)
+            accelMagFlow.collect { offset ->
+                marbleViewModel.gravityOffset.value = offset
+            }
+        }
+
+        Marble(
+            x = marbleOffset.x,
+            y = marbleOffset.y,
+            maxWidth = maxWidth,
+            maxHeight = maxHeight,
+            marbleViewModel = marbleViewModel
+        )
+    }
+}
+
+fun updateGravityData(
+    sensorManager: SensorManager,
+    marbleViewModel: PaintViewModel,
+    dampingFactor: Float,
+    maxWidth: Int,
+    maxHeight: Int
+): Flow<Offset> {
+    return channelFlow {
+        val gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
+        var currentOffset = marbleViewModel.gravityOffset.value
+        val radius = 50.dp.value
+        val xMin = 0f
+        val xMax = maxWidth - 2 * radius
+        val yMin = 0f
+        val yMax = maxHeight - 2 * radius
+
+        val sensorListener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent?) {
+                event?.let {
+                    val gravityX = it.values[0]
+                    val gravityY = it.values[1]
+                    val deltaX = gravityX * dampingFactor
+                    val deltaY = gravityY * dampingFactor
+
+                    val constrainedX = (currentOffset.x + deltaX).coerceIn(xMin, xMax)
+                    val constrainedY = (currentOffset.y + deltaY).coerceIn(yMin, yMax)
+                    currentOffset = Offset(constrainedX, constrainedY)
+
+                    marbleViewModel.gravityOffset.value = currentOffset
+                    marbleViewModel.trailPositions.add(currentOffset)
+                    trySend(currentOffset)
+                } ?: run {
+                    Log.e("Event Null", "Gge")
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+        }
+
+        sensorManager.registerListener(
+            sensorListener,
+            gravitySensor,
+            SensorManager.SENSOR_DELAY_GAME
+        )
+        awaitClose {
+            sensorManager.unregisterListener(sensorListener)
+        }
+    }
+}
 
 @Composable
 fun Marble(x: Float, y: Float, maxWidth: Int, maxHeight: Int, marbleViewModel: PaintViewModel ) {
@@ -1038,4 +985,313 @@ fun Marble(x: Float, y: Float, maxWidth: Int, maxHeight: Int, marbleViewModel: P
                 }
         )
     }
+}
+
+@Composable
+fun addImageToCanvas(imageData: ImageData,myViewModel: PaintViewModel){
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(0f) }
+    val windowInfo = rememberWindowInfo()
+    var size = 200.dp
+    when (windowInfo.screenWidthInfo) {
+        WindowInfo.WindowType.Compact -> {
+            size = 100.dp
+        }
+        WindowInfo.WindowType.Medium -> {
+            size = 150.dp
+        }
+        WindowInfo.WindowType.Expanded -> {
+            size = 200.dp
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .size(size)
+            .offset {
+                IntOffset(
+                    (imageData.x + offsetX).roundToInt(),
+                    (imageData.y + offsetY).roundToInt()
+                )
+            }
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    offsetX += dragAmount.x
+                    offsetY += dragAmount.y
+                    myViewModel.updateImageDataBySrc(
+                        imageData.src,
+                        ImageData(imageData.src, offsetX, offsetY)
+                    )
+                    // myViewModel.updateImageCoordinates(imageData, offsetX, offsetY)
+
+                }
+            }
+    ) {
+        AsyncImage(
+            model = imageData.src,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        IconButton(
+            onClick = {
+                Log.e("Image Cross",myViewModel.getImages().size.toString())
+                myViewModel.removeImage(imageData)
+                Log.e("Image Cross After",myViewModel.getImages().size.toString())
+            },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close Image"
+            )
+        }
+    }
+
+}
+
+@Composable
+fun  addTextField(myViewModel: PaintViewModel,text : TextBox ){
+
+    var textValue by remember { mutableStateOf(text.value) }
+    var offsetX by remember { mutableStateOf(text.x) }
+    var offsetY by remember { mutableStateOf(text.y) }
+
+    Box(
+        modifier = Modifier
+            .size(200.dp)
+            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    offsetX += dragAmount.x
+                    offsetY += dragAmount.y
+                    myViewModel.updateTextCoordinates(text, offsetX, offsetY)
+                }
+            }
+    ) {
+
+        TextField(value = textValue, onValueChange = {
+            textValue = it
+            myViewModel.updateTextValue(text,textValue)
+        })
+        IconButton(
+            onClick = {
+                myViewModel.removeTexts(text)
+            },
+            modifier = Modifier
+                .padding(4.dp) // Adjust the padding as needed
+                .align(Alignment.TopEnd) // Position the close button in the top-right corner
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close Image"
+            )
+        }
+    }
+
+}
+
+
+
+
+
+
+@Composable
+fun SaveDrawingDialog(
+    onSave: () -> Unit,
+    onDismiss: () -> Unit,
+    onNameChange: (String) -> Unit,
+    initialName: String
+) {
+    // Create and display your custom dialog here
+    // Include buttons for confirmation and dismissal
+    // You can use a Dialog Composable or a custom AlertDialog
+    // Example using Dialog Composable:
+    var paintingName by remember { mutableStateOf(initialName) }
+    Dialog(
+        onDismissRequest = { onDismiss() }
+    ) {
+
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ){
+            TextField(
+                value = paintingName,
+                onValueChange = {
+                    paintingName = it
+                    onNameChange(it) // Callback to handle painting name changes
+                },
+                label = { Text("Painting Name") }
+            )
+
+            // Include a button to confirm the save action
+            Button(
+                onClick = {
+                    onSave()
+                    onDismiss()
+                },
+                enabled = paintingName.isNotBlank() && paintingName != "dummy" && paintingName.length>3
+            ) {
+                Text("Confirm Save")
+            }
+
+            // Include a button to dismiss the dialog
+            Button(
+                onClick = {
+                    onDismiss()
+                },
+
+                ) {
+                Text("Cancel")
+            }
+        }
+    }
+}
+
+
+
+
+fun deserializeDrawingTexts(drawingTexts: String?): List<TextBox> {
+    val gson = Gson()
+    val listType = object : TypeToken<List<TextBox>>() {}.type
+    return gson.fromJson(drawingTexts, listType)
+}
+
+fun deserializeDrawingData(drawingData: String?): List<Line> {
+    val gson = Gson()
+    val listType = object : TypeToken<List<Line>>() {}.type
+    return gson.fromJson(drawingData, listType)
+}
+
+fun deserializeDrawingImages(imagesData: String?): MutableList<ImageData> {
+    val gson: Gson = GsonBuilder()
+        .registerTypeAdapter(ImageData::class.java, ImageDataTypeAdapter())
+        .create()
+    val imageDataType = object : TypeToken<MutableList<ImageData>>() {}.type
+    return gson.fromJson(imagesData, imageDataType) ?: mutableListOf()
+}
+
+
+fun takeScreenshot(myViewModel: PaintViewModel, activity: ComponentActivity?, context: Context) {
+    if (activity == null) return
+
+
+    val deviceWidth = Resources.getSystem().displayMetrics.widthPixels
+    val deviceHeight = Resources.getSystem().displayMetrics.heightPixels
+
+    val screenshot = myViewModel.captureCanvasAsBitmap(deviceWidth,deviceHeight, context = context)
+    val timestamp = SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(Date())
+    val fileName = "Screenshot_$timestamp.png"
+    val screenshotFile = File(context.filesDir, fileName)
+
+    val uri = FileProvider.getUriForFile(
+        context,
+        "com.example.phase2.fileprovider",
+        screenshotFile
+    )
+
+    val fos = context.contentResolver.openOutputStream(uri)
+    screenshot.compress(Bitmap.CompressFormat.PNG,100, fos!!)
+    fos.close()
+
+//    val shareIntent: Intent = Intent().apply {
+//        action = Intent.ACTION_SEND
+//        putExtra(Intent.EXTRA_STREAM, uri)
+//        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+//        type = "image/png"
+//    }
+//
+//    context.startActivity(Intent.createChooser(shareIntent, "Share Screenshot"))
+
+    uploadImageToFirebase(uri,fileName,context)
+
+
+
+}
+
+suspend fun loadServerImages(): List<Uri> {
+    val storage: FirebaseStorage = Firebase.storage
+    val storageReference: StorageReference = storage.getReference()
+    val listResult = storageReference.listAll().await()
+    val imageUris = listResult.items.mapNotNull { item ->
+        try {
+            val uri = item.downloadUrl.await()
+            Uri.parse(uri.toString())
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    return imageUris
+}
+
+fun uploadImageToFirebase(imageUri:Uri,storagePath: String,context: Context){
+    var storageRef = FirebaseStorage.getInstance().getReference().child(storagePath)
+    storageRef.putFile(imageUri)
+        .addOnSuccessListener { taskSnapshot ->
+            Toast.makeText(
+                context,
+                "Image Upload Sucess:: "+taskSnapshot.uploadSessionUri.toString(),
+                Toast.LENGTH_LONG
+            ).show()
+
+        }
+        .addOnFailureListener { exception ->
+            Toast.makeText(
+                context,
+                "Image Upload Failed:: "+exception.message,
+                Toast.LENGTH_LONG
+            ).show()
+
+        }
+}
+
+
+
+fun uploadImageToFirebase(imageUri: Uri, storagePath: String): Flow<UploadTask.TaskSnapshot?> {
+    val storage: FirebaseStorage = Firebase.storage
+    val storageRef: StorageReference = storage.getReference().child(storagePath)
+
+    return callbackFlow {
+        val uploadTask = storageRef.putFile(imageUri)
+
+        uploadTask
+            .addOnSuccessListener { taskSnapshot ->
+                trySend(taskSnapshot).isSuccess
+                close()
+            }
+            .addOnFailureListener { exception ->
+                close(CancellationException("Image Upload Failed:: ${exception.message}"))
+            }
+
+        awaitClose { uploadTask.cancel() }
+    }
+}
+
+
+
+
+// Function to delete an image in Firebase Storage
+fun deleteImageFromFirebase(imageUri: Uri,context: Context){
+        val storage: FirebaseStorage = Firebase.storage
+        val imageReference = storage.getReferenceFromUrl(imageUri.toString())
+        imageReference.delete().addOnSuccessListener {
+            Toast.makeText(
+                context,
+                "Image Delete Success" ,
+                Toast.LENGTH_LONG
+            ).show()
+        }.addOnFailureListener {
+            Toast.makeText(
+                context,
+                "Image Delete Failure" ,
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
 }

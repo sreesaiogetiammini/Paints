@@ -41,8 +41,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.api.Logging
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.client.plugins.resources.*
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
-
+import kotlinx.serialization.Serializable
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.*
 @Composable
 fun UserScreen(navController: NavController, paintsRepository: PaintsRepository,userId: String) {
 
@@ -149,7 +164,9 @@ fun ListItem(drawingName: String, navController: NavController,paintsRepository:
         mutableStateOf(false)
     }
 
-
+    var isImageUploadTask by remember {
+        mutableStateOf(false)
+    }
 
     Row (
         modifier = Modifier
@@ -179,7 +196,8 @@ fun ListItem(drawingName: String, navController: NavController,paintsRepository:
             isDropDownVisible = false
         },
             modifier = Modifier.widthIn(320.dp)
-        ) {
+        )
+        {
             DropdownMenuItem(text = {
                 Text("Edit")
             }, onClick = {
@@ -189,26 +207,91 @@ fun ListItem(drawingName: String, navController: NavController,paintsRepository:
             })
             DropdownMenuItem(text = {
                 Text("Share")
-            }, onClick = {
-                isDropDownVisible = false;
+            },
+
+                onClick = {
+                isDropDownVisible = false
+                    isImageUploadTask = true
+
+
             })
             DropdownMenuItem(
                 text = { Text("Delete") },
                onClick = { isDropDownVisible = false; })
 
+            if(isImageUploadTask){
+                LaunchedEffect(Unit){
+                    val  dataFromDB = paintsRepository.getDrawingByDrawingName(drawingName = drawingName,userId= userId)
+                    Log.i("data from DB",dataFromDB.toString())
+                    
+                    if (dataFromDB != null) {
+
+                        val paintsServerData = dataFromDB.toPaintsServerData()
+                        
+                        uploadPaintingDataToKtorServer(paintsServerData)
+                    }
+                }
+
+
+            }
         }
     }
 }
 
 
 
-@Composable
-fun deleteDrawingName(drawingName: String, userId: String,paintsRepository:PaintsRepository) {
-    val scope = rememberCoroutineScope()
-    // Call the repository function to delete the drawing by name and user ID
-    LaunchedEffect(1){
-        scope.launch {
-            paintsRepository.deletePaintingByDrawingName(drawingName, userId)
+//@Composable
+//fun deleteDrawingName(dataFromDB: PaintsData) {
+//    val scope = rememberCoroutineScope()
+//    // Call the repository function to delete the drawing by name and user ID
+//    LaunchedEffect(1){
+//        scope.launch {
+//            paintsRepository.deletePaintingByDrawingName(drawingName, userId)
+//        }
+//    }
+//}
+
+
+suspend fun uploadPaintingDataToKtorServer(dataFromDB: PaintsServerData) {
+    runBlocking {
+        val client = HttpClient(CIO) {
+            install(ContentNegotiation) {
+                json(Json {
+                    prettyPrint = true
+                    isLenient = true
+                })
+            }
         }
+
+        println("Post Request is " + dataFromDB.toString())
+        val response: HttpResponse = client.post("http://10.0.2.2:8080/upload") {
+            contentType(ContentType.Application.Json)
+            setBody(dataFromDB)
+        }
+        println("Response is " + response.bodyAsText())
     }
+
+}
+
+
+@Serializable
+data class PaintsServerData(
+    var drawingName: String,
+    var drawingData: String,
+    var drawingImages: String,
+    var drawingTexts: String,
+    var userId: String
+)
+
+
+
+
+fun PaintsData.toPaintsServerData(): PaintsServerData {
+    return PaintsServerData(
+        drawingName = this.drawingName,
+        drawingData = this.drawingData,
+        drawingImages = this.drawingImages,
+        drawingTexts = this.drawingTexts,
+        userId = this.userId
+    )
 }

@@ -100,6 +100,12 @@ class PaintViewModel: ViewModel(){
         }
     }
 
+    fun updateImageCoordinates( imagedata: ImageData, offsetX: Float, offsetY: Float) {
+        imagedata.x = offsetX
+        imagedata.y = offsetY
+    }
+
+
     fun updateTextCoordinates(text: TextBox, offsetX: Float, offsetY: Float) {
         text.x = offsetX
         text.y = offsetY
@@ -114,6 +120,7 @@ class PaintViewModel: ViewModel(){
 
     fun captureCanvasAsBitmap(canvasWidth: Int,canvasHeight:Int,context:Context): Bitmap {
 
+        println("No of Images "+images.size)
         // Create a blank Bitmap with the specified dimensions
         val canvasBitmap = Bitmap.createBitmap(canvasWidth, canvasHeight, Bitmap.Config.ARGB_8888)
 
@@ -136,8 +143,8 @@ class PaintViewModel: ViewModel(){
             val imageX = image.x
             val imageY = image.y
 
-            val desiredWidth = 200 // Desired width in pixels
-            val desiredHeight = 200 // Desired height in pixels
+            val desiredWidth = 200
+            val desiredHeight = 200
 
             try {
                 val imageStream = context.contentResolver.openInputStream(imageUri)

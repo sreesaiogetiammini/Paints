@@ -1,0 +1,58 @@
+POST http://127.0.0.1:8080/upload
+Content-Type: application/json
+
+
+{
+  "userId" : 123456,
+  "drawingName" : "First Drawing",
+  "drawingData" : "First Drawing Data",
+  "drawingImages" : "First Drawing Images",
+  "drawingTexts": "First Drawing Tests"
+}
+
+####
+
+POST http://127.0.0.1:8080/upload
+Content-Type: application/json
+
+
+{
+  "userId" : 789456,
+  "drawingName" : "Second Drawing",
+  "drawingData" : "Second Drawing Data",
+  "drawingImages" : "Second Drawing Images",
+  "drawingTexts": "Second Drawing Tests"
+}
+
+####
+
+POST http://127.0.0.1:8080/upload
+Content-Type: application/json
+
+
+{
+  "userId" : 123456,
+  "drawingName" : "Third Drawing",
+  "drawingData" : "Third Drawing Data",
+  "drawingImages" : "Third Drawing Images",
+  "drawingTexts": "Third Drawing Tests"
+}
+
+####
+####
+
+POST http://127.0.0.1:8080/upload
+Content-Type: application/json
+MY_SESSION: 5283fa04e32284ea38ff0c8fefd0305e
+
+{
+
+  "drawingName" : "Third Drawing",
+  "drawingData" : "Third Drawing Data",
+  "drawingImages" : "Third Drawing Images",
+  "drawingTexts": "Third Drawing Tests",
+  "userId" : 123456
+}
+
+####
+GET http://127.0.0.1:8080/paintings
