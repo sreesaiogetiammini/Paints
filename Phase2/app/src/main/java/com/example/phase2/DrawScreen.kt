@@ -119,13 +119,13 @@ import kotlin.math.roundToInt
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FileDownloadTask
-import kotlinx.coroutines.CoroutineScope
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository, userId: String,drawingName: String,sensorManager: SensorManager) {
-    var sliderPosition by remember { mutableStateOf(10f) }
+    val sliderPosition by remember { mutableStateOf(10f) }
     var clickedBtn by remember { mutableStateOf(-1) }
     var isSliderDialogOpen by remember { mutableStateOf(false) }
     var isSaveDialogOpen by remember { mutableStateOf(false) }
@@ -135,7 +135,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
     var lines by remember { mutableStateOf(emptyList<Line>()) }
     val lineColor by rememberUpdatedState(myViewModel.lineColor)
     val lineStroke by rememberUpdatedState(myViewModel.lineStroke)
-    var id by remember { mutableStateOf(userId) }
+    val id by remember { mutableStateOf(userId) }
     val scope = rememberCoroutineScope()
     val icons = listOf(
         painterResource(R.drawable.baseline_draw_24),
@@ -148,7 +148,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
         painterResource(R.drawable.baseline_image_24),
         painterResource(R.drawable.baseline_cloud_download_24)
     )
-    val gson: Gson = GsonBuilder()
+    val imageGson: Gson = GsonBuilder()
         .registerTypeAdapter(ImageData::class.java, ImageDataTypeAdapter())
         .create()
     var isCapDialogOpen by remember { mutableStateOf(false) }
@@ -165,13 +165,14 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
         }
     )
     var textList by remember { mutableStateOf(emptyList<TextBox>()) }
-    var imageUploadedTpFireBase by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val activity = (LocalView.current.context as? ComponentActivity)
-    val aiPaintingEnabled by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
-    var selectedImagesFromServer by remember { mutableStateOf(mutableListOf<Uri>()) }
+    val selectedImagesFromServer by remember { mutableStateOf(mutableListOf<Uri>()) }
+    val progressVisible by remember { mutableStateOf(true) }
+
+
     Scaffold(
         topBar = {
            topBarStuff(
@@ -180,7 +181,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                myViewModel = myViewModel,
                activity = activity,
                context = context,
-
+               progressVisible = progressVisible
            )
         },
         bottomBar = {
@@ -338,7 +339,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
 
                                                 try {
                                                     // Download the image from Firebase Storage to the local file
-                                                    val fileDownloadTask: FileDownloadTask.TaskSnapshot? = storageReference.getFile(localFile).await()
+                                                    storageReference.getFile(localFile).await()
                                                     Log.i("File Download", "Success: " + Uri.fromFile(localFile).toString())
                                                     localImageUris.add(Uri.fromFile(localFile))
                                                 }
@@ -519,7 +520,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             val images = myViewModel.getImages()
                             val texts = myViewModel.getTexts()
                             val drawingData = Gson().toJson(lines) // Serialize the drawing data to JSON
-                            val drawingImages = gson.toJson(images)
+                            val drawingImages = imageGson.toJson(images)
                             Log.e("drawing Data", drawingImages)
                             val drawingTexts= Gson().toJson(texts)
 
@@ -591,7 +592,14 @@ fun topBarStuff(
     myViewModel: PaintViewModel,
     activity: ComponentActivity?,
     context: Context,
+    progressVisible:Boolean
 ){
+
+    if (progressVisible) {
+        LinearProgressIndicator(
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 
     Row(
         modifier = Modifier
@@ -609,23 +617,18 @@ fun topBarStuff(
                 .weight(1f)
                 .background(MaterialTheme.colorScheme.primaryContainer), // Color.Purple
         )
-        var imageLoaded by remember { mutableStateOf(false) }
-
-        if (imageLoaded) {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
 
         Button(
             onClick = {
-                imageLoaded = true
                 takeScreenshot(myViewModel,activity, context)
-                imageLoaded = false
             },
         ) {
+
+
             Image(painter = painterResource(id = R.drawable.baseline_upload_24),
                 contentDescription = "Upload Image")
+
+
         }
 
 
@@ -1022,6 +1025,7 @@ fun addImageToCanvas(imageData: ImageData,myViewModel: PaintViewModel){
                 }
             }
     ) {
+
         AsyncImage(
             model = imageSrc,
             contentDescription = null,
@@ -1207,10 +1211,11 @@ fun takeScreenshot(myViewModel: PaintViewModel, activity: ComponentActivity?, co
     uploadImageToFirebase(uri,fileName,context)
 
 
-
 }
 
 suspend fun loadServerImages(): List<Uri> {
+    val user = FirebaseAuth.getInstance().currentUser
+    val userId = user?.uid
     val storage: FirebaseStorage = Firebase.storage
     val storageReference: StorageReference = storage.getReference()
     val listResult = storageReference.listAll().await()
@@ -1226,14 +1231,15 @@ suspend fun loadServerImages(): List<Uri> {
     return imageUris
 }
 
+
 fun uploadImageToFirebase(imageUri:Uri,storagePath: String,context: Context){
     var storageRef = FirebaseStorage.getInstance().getReference().child(storagePath)
     storageRef.putFile(imageUri)
         .addOnSuccessListener { taskSnapshot ->
             Toast.makeText(
                 context,
-                "Image Upload Sucess:: "+taskSnapshot.uploadSessionUri.toString(),
-                Toast.LENGTH_LONG
+                "Image Upload Success",
+                Toast.LENGTH_SHORT
             ).show()
 
         }
@@ -1241,7 +1247,7 @@ fun uploadImageToFirebase(imageUri:Uri,storagePath: String,context: Context){
             Toast.makeText(
                 context,
                 "Image Upload Failed:: "+exception.message,
-                Toast.LENGTH_LONG
+                Toast.LENGTH_SHORT
             ).show()
 
         }
@@ -1262,13 +1268,13 @@ fun deleteImageFromFirebase(imageUri: Uri,context: Context){
             Toast.makeText(
                 context,
                 "Image Delete Success" ,
-                Toast.LENGTH_LONG
+                Toast.LENGTH_SHORT
             ).show()
         }.addOnFailureListener {
             Toast.makeText(
                 context,
                 "Image Delete Failure" ,
-                Toast.LENGTH_LONG
+                Toast.LENGTH_SHORT
             ).show()
         }
 
