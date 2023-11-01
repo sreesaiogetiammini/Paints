@@ -45,11 +45,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -93,7 +91,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.github.skydoves.colorpicker.compose.AlphaSlider
@@ -120,10 +117,10 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.google.firebase.storage.FileDownloadTask
-import com.google.firebase.storage.UploadTask
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.CoroutineScope
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -182,7 +179,8 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                userId = userId,
                myViewModel = myViewModel,
                activity = activity,
-               context = context
+               context = context,
+
            )
         },
         bottomBar = {
@@ -352,6 +350,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                                             Log.i("Local Files Download",localImageUris.size.toString())
 
                                             localImageUris.forEach { uri ->
+                                                Log.i("Local uri", uri.toString())
                                                 myViewModel.addImage(ImageData(uri,0f,0f))
                                             }
                                             selectedImagesFromServer.clear()
@@ -555,7 +554,7 @@ fun DrawScreen(navController: NavController, paintsRepository: PaintsRepository,
                             }
                         }
                         isSaveDialogOpen = false
-                    },
+                             },
                     onDismiss = {
                         isSaveDialogOpen = false // Close the dialog on dismiss
                     },
@@ -591,7 +590,7 @@ fun topBarStuff(
     userId: String,
     myViewModel: PaintViewModel,
     activity: ComponentActivity?,
-    context: Context
+    context: Context,
 ){
 
     Row(
@@ -987,10 +986,14 @@ fun Marble(x: Float, y: Float, maxWidth: Int, maxHeight: Int, marbleViewModel: P
     }
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun addImageToCanvas(imageData: ImageData,myViewModel: PaintViewModel){
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
+
+    var displayIcons by remember { mutableStateOf(false) }
+    var imageSrc by remember { mutableStateOf(imageData.src) }
+    var offsetX by remember { mutableStateOf(imageData.x) }
+    var offsetY by remember { mutableStateOf(imageData.y) }
     val windowInfo = rememberWindowInfo()
     var size = 200.dp
     when (windowInfo.screenWidthInfo) {
@@ -1008,47 +1011,40 @@ fun addImageToCanvas(imageData: ImageData,myViewModel: PaintViewModel){
     Box(
         modifier = Modifier
             .size(size)
-            .offset {
-                IntOffset(
-                    (imageData.x + offsetX).roundToInt(),
-                    (imageData.y + offsetY).roundToInt()
-                )
-            }
+            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
             .pointerInput(Unit) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
                     offsetX += dragAmount.x
                     offsetY += dragAmount.y
-                    myViewModel.updateImageDataBySrc(
-                        imageData.src,
-                        ImageData(imageData.src, offsetX, offsetY)
-                    )
-                    // myViewModel.updateImageCoordinates(imageData, offsetX, offsetY)
+                     myViewModel.updateImageCoordinates(imageData, offsetX, offsetY)
 
                 }
             }
     ) {
         AsyncImage(
-            model = imageData.src,
+            model = imageSrc,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().clickable { displayIcons = !displayIcons }
         )
-
-        IconButton(
-            onClick = {
-                Log.e("Image Cross",myViewModel.getImages().size.toString())
-                myViewModel.removeImage(imageData)
-                Log.e("Image Cross After",myViewModel.getImages().size.toString())
-            },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Close Image"
-            )
+        if(displayIcons){
+            IconButton(
+                onClick = {
+                    Log.e("Image Cross Before ",myViewModel.getImages().size.toString() +"  :: src  is" +imageData.src.toString())
+                    myViewModel.removeImage(imageData,imageSrc)
+                    Log.e("Image Cross After",myViewModel.getImages().size.toString())
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close Image"
+                )
+            }
         }
+
     }
 
 }
@@ -1253,25 +1249,7 @@ fun uploadImageToFirebase(imageUri:Uri,storagePath: String,context: Context){
 
 
 
-fun uploadImageToFirebase(imageUri: Uri, storagePath: String): Flow<UploadTask.TaskSnapshot?> {
-    val storage: FirebaseStorage = Firebase.storage
-    val storageRef: StorageReference = storage.getReference().child(storagePath)
 
-    return callbackFlow {
-        val uploadTask = storageRef.putFile(imageUri)
-
-        uploadTask
-            .addOnSuccessListener { taskSnapshot ->
-                trySend(taskSnapshot).isSuccess
-                close()
-            }
-            .addOnFailureListener { exception ->
-                close(CancellationException("Image Upload Failed:: ${exception.message}"))
-            }
-
-        awaitClose { uploadTask.cancel() }
-    }
-}
 
 
 

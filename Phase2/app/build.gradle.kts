@@ -79,7 +79,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$version")
 
     debugImplementation("androidx.compose.ui:ui-test-manifest:$rootProject.composeVersion")
-
+    implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
     val nav_version = "2.7.4"
 
 
