@@ -1,19 +1,13 @@
 package com.example.phase2
 
-
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -24,17 +18,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(navController: NavController) {
-    Column (
-        modifier = Modifier.fillMaxSize().clickable{ navController.navigate(Screen.LoginScreen.route) },
+    LaunchedEffect(key1 = true) {
+        delay(1000L) // 2 seconds delay
+        navController.navigate(Screen.LoginScreen.route)
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
-
-    )
-    {
-
+    ) {
         Image(
             painter = painterResource(id = R.drawable.paints),
             contentDescription = null,
@@ -54,9 +51,7 @@ fun SplashScreen(navController: NavController) {
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
-        )
-
-        {
+        ) {
             Image(
                 painter = painterResource(id = R.drawable.paintslogo),
                 contentDescription = null,
@@ -65,13 +60,8 @@ fun SplashScreen(navController: NavController) {
 
             Text("How you doin'?")
         }
-
-
     }
-
 }
-
-
 
 @Preview(showBackground = true)
 @Composable

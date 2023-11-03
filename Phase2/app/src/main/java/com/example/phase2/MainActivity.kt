@@ -54,7 +54,7 @@ fun Navigation(context: Context,sensorManager: SensorManager) {
         }
         // User Login , SignUp Should be here
         composable(route = Screen.LoginScreen.route){
-            LoginScreen(navController = navController, databaseHelper = databaseHelper)
+            LoginScreen(navController = navController)
         }
         composable(route = Screen.SignUpScreen.route){
             SignUpScreen(navController = navController, databaseHelper = databaseHelper)
