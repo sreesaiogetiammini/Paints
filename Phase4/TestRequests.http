@@ -51,8 +51,13 @@ MY_SESSION: 5283fa04e32284ea38ff0c8fefd0305e
   "drawingData" : "Third Drawing Data",
   "drawingImages" : "Third Drawing Images",
   "drawingTexts": "Third Drawing Tests",
-  "userId" : 123456
+  "userId" : 123456,
+  "isGlobal": true
 }
 
 ####
 GET http://127.0.0.1:8080/paintings
+
+#####
+#DELETE  http://127.0.0.1:8080/paints
+#

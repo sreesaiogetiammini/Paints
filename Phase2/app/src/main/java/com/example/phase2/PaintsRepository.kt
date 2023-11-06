@@ -1,6 +1,7 @@
 package com.example.phase2
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.WorkerThread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,9 @@ class PaintsRepository(
 
     @WorkerThread
     suspend fun getDrawingByDrawingName(drawingName: String, userId: String): PaintsData? {
-        return paintsDao.getDrawingByDrawingName(drawingName, userId)
+        val paintsData = paintsDao.getDrawingByDrawingName(drawingName, userId)
+        Log.e("data",paintsData.toString())
+        return paintsData
     }
 
     @WorkerThread
@@ -34,6 +37,17 @@ class PaintsRepository(
     @WorkerThread
     fun getPaintingsByUserId(userId: String): List<PaintsData> {
         return paintsDao.getPaintingsByUserId(userId)
+    }
+
+    @WorkerThread
+    suspend fun setPaintingAsGlobal(userId: String, drawingName: String) {
+//        return paintsDao.setDrawingAsGlobal(drawingName,userId)
+        val existingData = paintsDao.getDrawingByDrawingName(drawingName, userId)
+        if (existingData != null) {
+            existingData.isGlobal = true
+            Log.e("global/not", existingData.isGlobal.toString())
+            paintsDao.updatePaintsData(existingData)
+        }
     }
 
     @WorkerThread

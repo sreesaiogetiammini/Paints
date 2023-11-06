@@ -12,7 +12,8 @@ data class PaintsData(
     var drawingData: String,
     var drawingImages: String,
     var drawingTexts: String,
-    var userId: String
+    var userId: String,
+    var isGlobal: Boolean = true
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0 // Primary key for the DB

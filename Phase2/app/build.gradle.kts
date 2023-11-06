@@ -138,7 +138,7 @@ dependencies {
     implementation("io.ktor:ktor-client-resources:$ktor_version")
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-
+    implementation ("io.ktor:ktor-client-android:$ktor_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 
 

@@ -12,6 +12,7 @@ import io.ktor.server.sessions.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 
@@ -37,6 +38,7 @@ fun Application.configureResources() {
                             it[drawingImages] = uploadedData.drawingImages
                             it[drawingTexts] = uploadedData.drawingTexts
                             it[userId] = uploadedData.userId
+                            it[isGlobal] = uploadedData.isGlobal
                         }
                     }
 
@@ -52,9 +54,8 @@ fun Application.configureResources() {
                 call.respond(HttpStatusCode.BadRequest, "Invalid data "+e.message)
             }
         }
-        get("paintings") {
+        get("/paintings") {
             val paintings =
-
                 newSuspendedTransaction(Dispatchers.IO, DBSettings.db) {
                 Painting.selectAll().map {
                     PaintsData(
@@ -62,8 +63,8 @@ fun Application.configureResources() {
                         it[Painting.drawingName],
                         it[Painting.drawingData],
                         it[Painting.drawingImages],
-                        it[Painting.drawingTexts]
-
+                        it[Painting.drawingTexts],
+                        it[Painting.isGlobal]
                     )
                 }
             }
@@ -75,10 +76,30 @@ fun Application.configureResources() {
                 call.respond(HttpStatusCode.NotFound)
             }
         }
+        delete("/paints"){
+            val paintData:PaintsData= call.receive<PaintsData>()
+
+            if (paintData != null) {
+
+                val deletedPainting = newSuspendedTransaction(Dispatchers.IO, DBSettings.db) {
+                    Painting.deleteWhere { (Painting.userId eq paintData.userId) and (Painting.drawingName eq paintData.drawingName) }
+                }
+
+                if (deletedPainting > 0) {
+                    call.respond(HttpStatusCode.NoContent)
+                } else {
+                    call.respond(HttpStatusCode.NotFound)
+                }
+            } else {
+                call.respond(HttpStatusCode.BadRequest, "Invalid or missing paintData")
+            }
+        }
     }
 }
 
 
+
+data class DeletePaintingRequest(val userId: String, val drawingName: String)
 
 @Serializable
 data class PaintsData(
@@ -86,7 +107,8 @@ data class PaintsData(
     var drawingName: String,
     var drawingData: String,
     var drawingImages: String,
-    var drawingTexts: String
+    var drawingTexts: String,
+    var isGlobal: Boolean
 
 )
 

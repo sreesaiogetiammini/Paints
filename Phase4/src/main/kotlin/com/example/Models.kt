@@ -11,4 +11,5 @@ object Painting: IntIdTable(){
     val drawingImages = text("drawingImages")
     val drawingTexts = text("drawingTexts")
     val userId = text("userId")
+    val isGlobal = bool("isGlobal")
 }
