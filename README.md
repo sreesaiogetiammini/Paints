@@ -2,7 +2,7 @@
 This is a group project which is part of CS6018
 
 # TeamJSS_CS6018
-This is the repository for the CS6018 group project.
+A collaborative drawing app was developed using Kotlin, Custom ViewModel, Jetpack Compose, and Ktor Server. It offers diverse tools for drawing, a user-friendly interface, and thorough testing. The app is reliable and performs well, enhancing user satisfaction. It was rigorously tested using Unit Test cases, Instrumented Tests, and Automation Testing using Espresso.
 
 Junming Jin - u1198949  
 Sai Krishna Bollina - u1425010  
